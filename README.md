@@ -97,3 +97,4 @@ eshopOnContainers-devops/
 ├── terraform/            # IaC for Proxmox VM + k3s (Phase 3)
 └── docs/                 # Architecture diagrams and documentation
 ```
+
