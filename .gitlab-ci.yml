@@ -143,8 +143,8 @@ deploy-dev:
 deploy-staging:
   <<: *deploy-template
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  needs: [unit-tests]
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+  needs: [deploy-dev]
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
@@ -153,7 +153,7 @@ deploy-staging:
 deploy-prod:
   <<: *deploy-template
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
       when: manual
   needs: [deploy-staging]
   variables:
