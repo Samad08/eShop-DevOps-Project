@@ -1,0 +1,72 @@
+stages:
+  - test
+  - build
+
+variables:
+  DOCKER_HOST: unix:///var/run/docker.sock
+  DOCKER_TLS_CERTDIR: ""
+
+# ──────────────────────────────────────────────
+# Stage 1: Unit Tests
+# ──────────────────────────────────────────────
+unit-tests:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:7.0
+  script:
+    - dotnet restore src/eShopOnContainers-ServicesAndWebApps.sln
+    - dotnet test src/BuildingBlocks/EventBus/EventBus.Tests/EventBus.Tests.csproj --no-restore --verbosity normal
+    - dotnet test src/Services/Basket/Basket.UnitTests/Basket.UnitTests.csproj --no-restore --verbosity normal
+    - dotnet test src/Services/Catalog/Catalog.UnitTests/Catalog.UnitTests.csproj --no-restore --verbosity normal
+    - dotnet test src/Services/Ordering/Ordering.UnitTests/Ordering.UnitTests.csproj --no-restore --verbosity normal
+
+# ──────────────────────────────────────────────
+# Stage 2: Build & Push to GitLab Registry
+# Only on push to dev or main
+# ──────────────────────────────────────────────
+build-and-push:
+  stage: build
+  image: docker:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main")
+  needs: [unit-tests]
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - |
+      docker build \
+        --tag $CI_REGISTRY_IMAGE/$IMAGE:linux-latest \
+        --tag $CI_REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA \
+        --file $DOCKERFILE \
+        src/
+      docker push $CI_REGISTRY_IMAGE/$IMAGE:linux-latest
+      docker push $CI_REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA
+  parallel:
+    matrix:
+      - IMAGE: basket.api
+        DOCKERFILE: src/Services/Basket/Basket.API/Dockerfile
+      - IMAGE: catalog.api
+        DOCKERFILE: src/Services/Catalog/Catalog.API/Dockerfile
+      - IMAGE: identity.api
+        DOCKERFILE: src/Services/Identity/Identity.API/Dockerfile
+      - IMAGE: ordering.api
+        DOCKERFILE: src/Services/Ordering/Ordering.API/Dockerfile
+      - IMAGE: ordering.backgroundtasks
+        DOCKERFILE: src/Services/Ordering/Ordering.BackgroundTasks/Dockerfile
+      - IMAGE: ordering.signalrhub
+        DOCKERFILE: src/Services/Ordering/Ordering.SignalrHub/Dockerfile
+      - IMAGE: payment.api
+        DOCKERFILE: src/Services/Payment/Payment.API/Dockerfile
+      - IMAGE: webhooks.api
+        DOCKERFILE: src/Services/Webhooks/Webhooks.API/Dockerfile
+      - IMAGE: mobileshoppingagg
+        DOCKERFILE: src/ApiGateways/Mobile.Bff.Shopping/aggregator/Dockerfile
+      - IMAGE: webshoppingagg
+        DOCKERFILE: src/ApiGateways/Web.Bff.Shopping/aggregator/Dockerfile
+      - IMAGE: webmvc
+        DOCKERFILE: src/Web/WebMVC/Dockerfile
+      - IMAGE: webspa
+        DOCKERFILE: src/Web/WebSPA/Dockerfile
+      - IMAGE: webstatus
+        DOCKERFILE: src/Web/WebStatus/Dockerfile
+      - IMAGE: webhooks.client
+        DOCKERFILE: src/Web/WebhookClient/Dockerfile
