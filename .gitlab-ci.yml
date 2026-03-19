@@ -99,7 +99,7 @@ build-and-push:
           --namespace $NAMESPACE \
           --values app.yaml --values inf.yaml \
           --set inf.k8s.dns=$DNS --set app.name=eshop \
-          --wait --timeout 5m || true
+          || true
       done
     - |
       for chart in basket-api catalog-api identity-api mobileshoppingagg ordering-api ordering-backgroundtasks ordering-signalrhub payment-api webmvc webshoppingagg webspa webstatus webhooks-api webhooks-web; do
@@ -115,7 +115,7 @@ build-and-push:
           --set inf.registry.login=$CI_REGISTRY_USER \
           --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
-          --wait --timeout 5m || true
+          || true
       done
     - |
       for gw in apigwms apigwws; do
@@ -125,7 +125,7 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
-          --wait --timeout 5m || true
+          || true
       done
 
 deploy-dev:
