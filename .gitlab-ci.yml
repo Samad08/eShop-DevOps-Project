@@ -7,7 +7,8 @@ variables:
   DOCKER_HOST: unix:///var/run/docker.sock
   DOCKER_TLS_CERTDIR: ""
   REGISTRY: "10.10.10.10:5050"
-  REGISTRY_IMAGE: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops"
+  REGISTRY_PROJECT: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops"
+  REGISTRY_IMAGE: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops/eshop"
 
 # ──────────────────────────────────────────────
 # Stage 1: Unit Tests
@@ -110,7 +111,7 @@ build-and-push:
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
           --set image.tag=linux-$CI_COMMIT_SHORT_SHA \
           --set image.pullPolicy=Always \
-          --set inf.registry.server=$REGISTRY \
+          --set inf.registry.server=$REGISTRY_PROJECT \
           --set inf.registry.login=$CI_REGISTRY_USER \
           --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
