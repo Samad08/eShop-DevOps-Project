@@ -139,7 +139,7 @@ deploy-dev:
   variables:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
     NAMESPACE: eshop-dev
-    DNS: "eshop.10.10.20.10.nip.io"
+    DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
 
 deploy-staging:
   <<: *deploy-template
@@ -149,7 +149,7 @@ deploy-staging:
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
-    DNS: "eshop.10.10.30.10.nip.io"
+    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
 
 deploy-prod:
   <<: *deploy-template
@@ -161,4 +161,4 @@ deploy-prod:
   variables:
     KUBECONFIG: /root/.kube/k3s-prod.yaml
     NAMESPACE: eshop-prod
-    DNS: "eshop.10.10.40.10.nip.io"
+    DNS: "jan26-group6-eshoponcontainers.abrdns.com"
