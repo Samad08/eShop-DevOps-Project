@@ -1,6 +1,7 @@
 stages:
   - test
   - build
+  - deploy
 
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -72,3 +73,83 @@ build-and-push:
         DOCKERFILE: src/Web/WebStatus/Dockerfile
       - IMAGE: webhooks.client
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
+
+# ──────────────────────────────────────────────
+# Stage 3: Deploy
+# dev  → k3s-dev     (automatic)
+# main → k3s-staging (automatic) + k3s-prod (manual)
+# ──────────────────────────────────────────────
+.deploy-template: &deploy-template
+  stage: deploy
+  image: dtzar/helm-kubectl:latest
+  script:
+    - cd kubernetes/helm
+    - kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      kubectl create secret docker-registry eshop-registry-secret \
+        --docker-server=$REGISTRY \
+        --docker-username=$CI_REGISTRY_USER \
+        --docker-password=$CI_REGISTRY_PASSWORD \
+        --namespace=$NAMESPACE \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      for chart in sql-data nosql-data rabbitmq keystore-data basket-data; do
+        helm upgrade --install eshop-$chart $chart \
+          --namespace $NAMESPACE \
+          --values app.yaml --values inf.yaml \
+          --set inf.k8s.dns=$DNS --set app.name=eshop \
+          --wait --timeout 5m || true
+      done
+    - |
+      for chart in basket-api catalog-api identity-api mobileshoppingagg ordering-api ordering-backgroundtasks ordering-signalrhub payment-api webmvc webshoppingagg webspa webstatus webhooks-api webhooks-web; do
+        helm upgrade --install eshop-$chart $chart \
+          --namespace $NAMESPACE \
+          --values app.yaml --values inf.yaml \
+          --set inf.k8s.dns=$DNS --set app.name=eshop \
+          --set image.tag=linux-$CI_COMMIT_SHORT_SHA \
+          --set image.pullPolicy=Always \
+          --set inf.registry.server=$REGISTRY \
+          --set inf.registry.login=$CI_REGISTRY_USER \
+          --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
+          --set inf.registry.secretName=eshop-registry-secret \
+          --wait --timeout 5m || true
+      done
+    - |
+      for gw in apigwms apigwws; do
+        helm upgrade --install eshop-$gw $gw \
+          --namespace $NAMESPACE \
+          --values app.yaml --values inf.yaml \
+          --set inf.k8s.dns=$DNS --set app.name=eshop \
+          --wait --timeout 5m || true
+      done
+
+deploy-dev:
+  <<: *deploy-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+  needs: [build-and-push]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-dev.yaml
+    NAMESPACE: eshop-dev
+    DNS: "10.10.20.10"
+
+deploy-staging:
+  <<: *deploy-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+  needs: [build-and-push]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-staging.yaml
+    NAMESPACE: eshop-staging
+    DNS: "10.10.30.10"
+
+deploy-prod:
+  <<: *deploy-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+      when: manual
+  needs: [deploy-staging]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-prod.yaml
+    NAMESPACE: eshop-prod
+    DNS: "10.10.40.10"
