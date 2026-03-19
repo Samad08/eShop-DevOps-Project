@@ -32,6 +32,8 @@ build-and-push:
   image: docker:latest
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main")
+      changes:
+        - src/**/*
   needs: [unit-tests]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $REGISTRY
@@ -109,7 +111,7 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
-          --set image.tag=linux-$CI_COMMIT_SHORT_SHA \
+          --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
           --set inf.registry.login=$CI_REGISTRY_USER \
@@ -132,7 +134,7 @@ deploy-dev:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  needs: [build-and-push]
+  needs: [unit-tests]
   variables:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
     NAMESPACE: eshop-dev
@@ -142,7 +144,7 @@ deploy-staging:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  needs: [build-and-push]
+  needs: [unit-tests]
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
