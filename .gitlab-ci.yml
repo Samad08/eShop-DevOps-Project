@@ -5,8 +5,8 @@ stages:
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
   DOCKER_TLS_CERTDIR: ""
-  CI_REGISTRY: "10.10.10.10:5050"
-  CI_REGISTRY_IMAGE: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops"
+  REGISTRY: "10.10.10.10:5050"
+  REGISTRY_IMAGE: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops"
 
 # ──────────────────────────────────────────────
 # Stage 1: Unit Tests
@@ -32,16 +32,16 @@ build-and-push:
     - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main")
   needs: [unit-tests]
   before_script:
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $REGISTRY
   script:
     - |
       docker build \
-        --tag $CI_REGISTRY_IMAGE/$IMAGE:linux-latest \
-        --tag $CI_REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA \
+        --tag $REGISTRY_IMAGE/$IMAGE:linux-latest \
+        --tag $REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA \
         --file $DOCKERFILE \
         src/
-      docker push $CI_REGISTRY_IMAGE/$IMAGE:linux-latest
-      docker push $CI_REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA
+      docker push $REGISTRY_IMAGE/$IMAGE:linux-latest
+      docker push $REGISTRY_IMAGE/$IMAGE:linux-$CI_COMMIT_SHORT_SHA
   parallel:
     matrix:
       - IMAGE: basket.api
