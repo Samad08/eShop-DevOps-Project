@@ -2,6 +2,7 @@ stages:
   - test
   - build
   - deploy
+  - promote
 
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -31,7 +32,9 @@ build-and-push:
   stage: build
   image: docker:latest
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main")
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - src/**/*
   needs: [unit-tests]
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $REGISTRY
@@ -99,7 +102,7 @@ build-and-push:
           --namespace $NAMESPACE \
           --values app.yaml --values inf.yaml \
           --set inf.k8s.dns=$DNS --set app.name=eshop \
-          --wait --timeout 5m || true
+          || true
       done
     - |
       for chart in basket-api catalog-api identity-api mobileshoppingagg ordering-api ordering-backgroundtasks ordering-signalrhub payment-api webmvc webshoppingagg webspa webstatus webhooks-api webhooks-web; do
@@ -109,13 +112,13 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
-          --set image.tag=linux-$CI_COMMIT_SHORT_SHA \
+          --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
           --set inf.registry.login=$CI_REGISTRY_USER \
           --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
-          --wait --timeout 5m || true
+          || true
       done
     - |
       for gw in apigwms apigwws; do
@@ -125,14 +128,14 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
-          --wait --timeout 5m || true
+          || true
       done
 
 deploy-dev:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  needs: [build-and-push]
+  needs: [unit-tests]
   variables:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
     NAMESPACE: eshop-dev
@@ -142,7 +145,7 @@ deploy-staging:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  needs: [build-and-push]
+  needs: [unit-tests]
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
@@ -150,6 +153,7 @@ deploy-staging:
 
 deploy-prod:
   <<: *deploy-template
+  stage: promote
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
       when: manual
