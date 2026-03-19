@@ -98,3 +98,4 @@ eshopOnContainers-devops/
 └── docs/                 # Architecture diagrams and documentation
 ```
 
+
