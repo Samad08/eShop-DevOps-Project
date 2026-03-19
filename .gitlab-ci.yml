@@ -6,6 +6,7 @@ variables:
   DOCKER_HOST: unix:///var/run/docker.sock
   DOCKER_TLS_CERTDIR: ""
   CI_REGISTRY: "10.10.10.10:5050"
+  CI_REGISTRY_IMAGE: "10.10.10.10:5050/eshop-group6-jan26/eshoponcontainers-devops"
 
 # ──────────────────────────────────────────────
 # Stage 1: Unit Tests
