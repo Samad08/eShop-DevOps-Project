@@ -92,8 +92,8 @@ build-and-push:
     - |
       kubectl create secret docker-registry eshop-registry-secret \
         --docker-server=$REGISTRY \
-        --docker-username=$CI_REGISTRY_USER \
-        --docker-password=$CI_REGISTRY_PASSWORD \
+        --docker-username=$DEPLOY_TOKEN_USER \
+        --docker-password=$DEPLOY_TOKEN_PASSWORD \
         --namespace=$NAMESPACE \
         --dry-run=client -o yaml | kubectl apply -f -
     - |
@@ -115,8 +115,8 @@ build-and-push:
           --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
-          --set inf.registry.login=$CI_REGISTRY_USER \
-          --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
+          --set inf.registry.login=$DEPLOY_TOKEN_USER \
+          --set inf.registry.pwd=$DEPLOY_TOKEN_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
           || true
       done
