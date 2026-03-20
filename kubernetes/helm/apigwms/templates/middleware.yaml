@@ -1,0 +1,15 @@
+{{- $ingressPath := include "pathBase" . -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ template "apigwms.fullname" . }}-strip
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "apigwms.name" . }}
+    chart: {{ template "apigwms.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ $ingressPath }}
