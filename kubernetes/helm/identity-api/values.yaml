@@ -58,7 +58,7 @@ env:
       key: enableDevspaces
   values:
     - name: ASPNETCORE_ENVIRONMENT
-      value: Development
+      value: Production
     - name: OrchestratorType
       value: 'K8S'
     - name: IsClusterEnv

@@ -92,8 +92,8 @@ build-and-push:
     - |
       kubectl create secret docker-registry eshop-registry-secret \
         --docker-server=$REGISTRY \
-        --docker-username=$CI_REGISTRY_USER \
-        --docker-password=$CI_REGISTRY_PASSWORD \
+        --docker-username=$DEPLOY_TOKEN_USER \
+        --docker-password=$DEPLOY_TOKEN_PASSWORD \
         --namespace=$NAMESPACE \
         --dry-run=client -o yaml | kubectl apply -f -
     - |
@@ -110,13 +110,14 @@ build-and-push:
           --namespace $NAMESPACE \
           --values app.yaml --values inf.yaml \
           --set inf.k8s.dns=$DNS --set app.name=eshop \
+          --set inf.tls.enabled=true \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
           --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
-          --set inf.registry.login=$CI_REGISTRY_USER \
-          --set inf.registry.pwd=$CI_REGISTRY_PASSWORD \
+          --set inf.registry.login=$DEPLOY_TOKEN_USER \
+          --set inf.registry.pwd=$DEPLOY_TOKEN_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
           || true
       done
@@ -139,7 +140,7 @@ deploy-dev:
   variables:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
     NAMESPACE: eshop-dev
-    DNS: "eshop.10.10.20.10.nip.io"
+    DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
 
 deploy-staging:
   <<: *deploy-template
@@ -149,7 +150,7 @@ deploy-staging:
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
-    DNS: "eshop.10.10.30.10.nip.io"
+    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
 
 deploy-prod:
   <<: *deploy-template
@@ -161,4 +162,4 @@ deploy-prod:
   variables:
     KUBECONFIG: /root/.kube/k3s-prod.yaml
     NAMESPACE: eshop-prod
-    DNS: "eshop.10.10.40.10.nip.io"
+    DNS: "jan26-group6-eshoponcontainers.abrdns.com"

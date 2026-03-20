@@ -11,10 +11,11 @@ metadata:
     chart: {{ template "apigwms.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-{{- with .Values.ingress.annotations }}
   annotations:
+{{- with .Values.ingress.annotations }}
 {{ toYaml . | indent 4 }}
 {{- end }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ template "apigwms.fullname" . }}-strip@kubernetescrd
 {{- if and .Values.inf.tls.enabled .Values.inf.tls.issuer }}
     cert-manager.io/issuer: {{ .Values.inf.tls.issuer }} 
 {{- end }}
@@ -39,8 +40,8 @@ spec:
     - host: {{ . }}
       http:
         paths:
-          - path: {{ $ingressPath }}(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: {{ $ingressPath }}
+            pathType: Prefix
             backend:
               service:
                 name: {{ $serviceName }}
