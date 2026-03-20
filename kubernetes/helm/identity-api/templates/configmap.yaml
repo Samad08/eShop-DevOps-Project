@@ -23,13 +23,13 @@ data:
   identity__ConnectionString: Server={{ $sqlsrv }};Initial Catalog={{ .Values.inf.sql.identity.db }};User Id={{ .Values.inf.sql.common.user }};Password={{ .Values.inf.sql.common.pwd }};TrustServerCertificate={{ .Values.inf.sql.common.TrustServerCertificate }};
   identity__keystore: {{ .Values.inf.redis.keystore.constr }}
   all__InstrumentationKey: "{{ .Values.inf.appinsights.key }}"
-  mvc_e: http://{{ $mvc_url }}
-  spa_e: http://{{ $spa_url }}
-  basket_e: http://{{ $basket_url }}
-  ordering_e: http://{{ $ordering_url }}
-  mobileshoppingagg_e: http://{{ $mobileshoppingagg }}
-  webshoppingagg_e: http://{{ $webhoppingagg }}
-  xamarin_callback_e: http://{{ $xamarincallback }}
-  webhooksapi_e:  http://{{ $webhooks_url }}
-  webhooksweb_e: http://{{ $webhooksweb_url }}
+  mvc_e: https://{{ $mvc_url }}
+  spa_e: https://{{ $spa_url }}
+  basket_e: https://{{ $basket_url }}
+  ordering_e: https://{{ $ordering_url }}
+  mobileshoppingagg_e: https://{{ $mobileshoppingagg }}
+  webshoppingagg_e: https://{{ $webhoppingagg }}
+  xamarin_callback_e: https://{{ $xamarincallback }}
+  webhooksapi_e:  https://{{ $webhooks_url }}
+  webhooksweb_e: https://{{ $webhooksweb_url }}
   enableDevspaces: "{{ .Values.enableDevspaces }}"

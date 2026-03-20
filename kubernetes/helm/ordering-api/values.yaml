@@ -46,7 +46,7 @@ env:
       # values define environment variables with a fixed value (no configmap involved) (name is name of var, and value is its value)
   values:
     - name: ASPNETCORE_ENVIRONMENT
-      value: Development
+      value: Production
     - name: OrchestratorType
       value: 'K8S'
     - name: PORT
@@ -56,7 +56,7 @@ env:
 probes:
   liveness:
     path: /liveness
-    initialDelaySeconds: 10
+    initialDelaySeconds: 120
     periodSeconds: 15
     port: 80
   readiness:
