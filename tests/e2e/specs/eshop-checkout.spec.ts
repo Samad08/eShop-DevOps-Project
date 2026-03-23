@@ -2,28 +2,16 @@ import { test, expect } from '@playwright/test';
 
 test('eShop full checkout flow', async ({ page }) => {
   // ── Step 1: Login as Alice ────────────────────────────────────────────────
-  await page.goto(
-    '/identity/account/login' +
-      '?ReturnUrl=%2Fidentity%2Fconnect%2Fauthorize%2Fcallback' +
-      '%3Fclient_id%3Dmvc%26redirect_uri%3Dhttps%253A%252F%252F' +
-      (process.env.BASE_URL ?? 'dev.jan26-group6-eshoponcontainers.abrdns.com')
-        .replace(/^https?:\/\//, '') +
-      '%252Fsignin-oidc%26response_type%3Dcode%2520id_token' +
-      '%26scope%3Dopenid%2520profile%2520orders%2520basket%2520webshoppingagg%2520webhooks' +
-      '%26response_mode%3Dform_post%26nonce%3Dtest123%26state%3Dtest456',
-  );
+  // Navigate to catalog — the app will redirect to the Identity login page
+  await page.goto('/');
+  await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
 
   await page.fill('#Input_Email', 'alice');
   await page.fill('#Input_Password', 'Pass123$');
   await page.click('button[type="submit"]');
 
-  // If redirect hit an error page, drive the authorize endpoint directly
-  const currentUrl = page.url();
-  if (currentUrl.includes('error') || currentUrl.includes('502') || currentUrl.includes('signin-oidc')) {
-    // Already handled by OIDC callback – just navigate to catalog
-  } else if (!currentUrl.includes('/catalog') && !currentUrl.includes('webmvc')) {
-    await page.goto('/catalog');
-  }
+  // Wait until we land back on the MVC app (catalog or home)
+  await page.waitForURL(/\/(catalog|index|$)/i, { timeout: 30_000 });
 
   await page.waitForSelector('.esh-identity-name', { timeout: 30_000 });
   await expect(page.locator('.esh-identity-name')).toContainText('AliceSmith@email.com');
@@ -43,7 +31,6 @@ test('eShop full checkout flow', async ({ page }) => {
     const item = items.nth(i);
     await item.hover();
     await item.locator('.esh-catalog-button').click();
-    // Small wait to let the cart badge update between clicks
     await page.waitForTimeout(500);
   }
 
