@@ -4,20 +4,17 @@ import { test, expect } from '@playwright/test';
 test('WebSPA: full checkout flow', async ({ page }) => {
   // ── Step 1: Login as Alice ────────────────────────────────────────────────
   await page.goto('/');
-  await page.waitForSelector('.esh-identity-name', { timeout: 15_000 });
-  await page.locator('.esh-identity-name').click();
-  await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
+  // The LOGIN link is inside .esh-identity-name — use the img sibling to avoid ambiguity
+  await page.waitForSelector('text=LOGIN', { timeout: 15_000 });
+  await page.click('text=LOGIN');
+  await page.getByLabel('Username').waitFor({ timeout: 30_000 });
 
   await page.getByLabel('Username').fill('alice');
   await page.getByLabel('Password').fill('Pass123$');
   await page.getByRole('button', { name: 'Login' }).click();
 
-  // SPA uses implicit flow — identity redirects back to / with tokens in URL fragment.
-  // Angular processes the fragment and shows the logged-in username.
-  await page.waitForURL(/^[^#]+\/?(?:#.*)?$/, { timeout: 30_000 }).catch(() => {});
-  await expect(page.locator('.esh-identity-name')).not.toContainText('LOGIN', { timeout: 20_000 });
-  const loggedInUser = page.locator('.esh-identity-name');
-  await expect(loggedInUser).toBeVisible({ timeout: 20_000 });
+  // After implicit flow redirect, Angular shows a dropdown with "Log Out"
+  await expect(page.getByText('Log Out')).toBeVisible({ timeout: 20_000 });
 
   // ── Step 2: Verify catalog ────────────────────────────────────────────────
   await page.goto('/catalog');

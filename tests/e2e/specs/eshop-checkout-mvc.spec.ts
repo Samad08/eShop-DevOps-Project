@@ -6,7 +6,9 @@ test('WebMVC: full checkout flow', async ({ page }) => {
   await page.goto('/webmvc');
   await page.waitForSelector('text=LOGIN', { timeout: 15_000 });
   await page.click('text=LOGIN');
-  await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
+  // Wait for the login form — don't assert on URL since the redirect_uri
+  // path may vary depending on how the MVC reverse-proxy prefix is configured.
+  await page.getByLabel('Username').waitFor({ timeout: 30_000 });
 
   await page.getByLabel('Username').fill('alice');
   await page.getByLabel('Password').fill('Pass123$');
