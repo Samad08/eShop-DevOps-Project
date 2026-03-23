@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test('eShop full checkout flow', async ({ page }) => {
+// WebMVC: ASP.NET MVC app at /webmvc — uses Authorization Code Flow (server-side)
+test('WebMVC: full checkout flow', async ({ page }) => {
   // ── Step 1: Login as Alice ────────────────────────────────────────────────
-  // Catalog is public — click the LOGIN link to trigger the identity redirect
-  await page.goto('/');
+  await page.goto('/webmvc');
   await page.waitForSelector('text=LOGIN', { timeout: 15_000 });
   await page.click('text=LOGIN');
   await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
@@ -12,11 +12,9 @@ test('eShop full checkout flow', async ({ page }) => {
   await page.getByLabel('Password').fill('Pass123$');
   await page.getByRole('button', { name: 'Login' }).click();
 
-  // After OIDC callback the MVC app sometimes returns 502 transiently.
-  // Wait for any navigation to settle, then recover by going to /catalog.
   await page.waitForLoadState('load', { timeout: 15_000 }).catch(() => {});
   if (page.url().includes('502') || (await page.title()).includes('502')) {
-    await page.goto('/catalog');
+    await page.goto('/webmvc/catalog');
   }
 
   await expect(page.locator('.esh-identity-name')).toContainText('AliceSmith@email.com', { timeout: 20_000 });

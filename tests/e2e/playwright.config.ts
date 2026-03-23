@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './specs',
   timeout: 60_000,
   retries: 0,
+  workers: 1,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
