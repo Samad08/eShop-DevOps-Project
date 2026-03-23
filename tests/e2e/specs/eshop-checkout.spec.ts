@@ -2,8 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test('eShop full checkout flow', async ({ page }) => {
   // ── Step 1: Login as Alice ────────────────────────────────────────────────
-  // Navigate to catalog — the app will redirect to the Identity login page
+  // Catalog is public — click the LOGIN link to trigger the identity redirect
   await page.goto('/');
+  await page.waitForSelector('text=LOGIN', { timeout: 15_000 });
+  await page.click('text=LOGIN');
   await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
 
   await page.fill('#Input_Email', 'alice');
