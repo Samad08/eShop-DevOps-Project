@@ -6,6 +6,7 @@ global using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Builder;
+global using Microsoft.AspNetCore.HttpOverrides;
 global using Microsoft.AspNetCore.DataProtection;
 global using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 global using Microsoft.AspNetCore.Hosting;

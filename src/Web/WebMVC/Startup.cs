@@ -38,6 +38,11 @@ public class Startup
             app.UseExceptionHandler("/Error");
         }
 
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        });
+
         var pathBase = Configuration["PATH_BASE"];
 
         if (!string.IsNullOrEmpty(pathBase))
