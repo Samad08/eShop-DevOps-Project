@@ -158,7 +158,7 @@ deploy-staging:
 # Stage 4: E2E Tests (gate after deploy)
 # ──────────────────────────────────────────────
 .e2e-template: &e2e-template
-  image: mcr.microsoft.com/playwright:v1.49.0-noble
+  image: mcr.microsoft.com/playwright:v1.58.2-noble
   script:
     - cd tests/e2e
     - npm ci
