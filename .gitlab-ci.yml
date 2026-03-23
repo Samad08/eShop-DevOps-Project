@@ -138,7 +138,10 @@ deploy-dev:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  needs: [unit-tests]
+  needs:
+    - job: unit-tests
+    - job: build-and-push
+      optional: true
   variables:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
     NAMESPACE: eshop-dev
@@ -148,7 +151,10 @@ deploy-staging:
   <<: *deploy-template
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  needs: [unit-tests]
+  needs:
+    - job: unit-tests
+    - job: build-and-push
+      optional: true
   variables:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging

@@ -23,7 +23,7 @@ test('WebSPA: full checkout flow', async ({ page }) => {
   await expect(items).toHaveCount(12);
 
   for (let i = 0; i < 12; i++) {
-    const img = items.nth(i).locator('img');
+    const img = items.nth(i).locator('img.esh-catalog-thumbnail');
     await expect(img).toHaveAttribute('src', /.+/);
   }
 
