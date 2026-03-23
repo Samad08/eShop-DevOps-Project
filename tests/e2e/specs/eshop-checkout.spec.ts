@@ -8,9 +8,9 @@ test('eShop full checkout flow', async ({ page }) => {
   await page.click('text=LOGIN');
   await page.waitForURL(/\/identity\/account\/login/i, { timeout: 30_000 });
 
-  await page.fill('#Input_Email', 'alice');
-  await page.fill('#Input_Password', 'Pass123$');
-  await page.click('button[type="submit"]');
+  await page.getByLabel('Username').fill('alice');
+  await page.getByLabel('Password').fill('Pass123$');
+  await page.getByRole('button', { name: 'Login' }).click();
 
   // Wait until we land back on the MVC app (catalog or home)
   await page.waitForURL(/\/(catalog|index|$)/i, { timeout: 30_000 });
