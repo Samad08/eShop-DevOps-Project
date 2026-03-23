@@ -187,23 +187,6 @@ e2e-test-dev:
   variables:
     BASE_URL: "https://dev.jan26-group6-eshoponcontainers.abrdns.com"
 
-rollback-dev:
-  stage: e2e-test
-  image: dtzar/helm-kubectl:latest
-  needs: [e2e-test-dev]
-  when: on_failure
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  variables:
-    KUBECONFIG: /root/.kube/k3s-dev.yaml
-    NAMESPACE: eshop-dev
-  script:
-    - echo "E2E tests failed — rolling back dev to last working Helm revision"
-    - |
-      for chart in basket-api catalog-api identity-api mobileshoppingagg ordering-api ordering-backgroundtasks ordering-signalrhub payment-api webmvc webshoppingagg webspa webstatus webhooks-api webhooks-web apigwms apigwws; do
-        helm rollback eshop-$chart 0 --namespace $NAMESPACE || true
-      done
-    - echo "Rollback complete"
 
 e2e-test-staging:
   <<: *e2e-template
