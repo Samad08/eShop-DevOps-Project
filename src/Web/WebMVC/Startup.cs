@@ -187,7 +187,24 @@ static class ServiceCollectionExtensions
             options.Scope.Add("webshoppingagg");
             options.Scope.Add("orders.signalrhub");
             options.Scope.Add("webhooks");
-        });
+            // Traefik terminates TLS and forwards to the pod over http, so
+            // Request.Scheme is always "http" — fix the redirect_uri in both
+            // the authorization request and the token-exchange request.
+            options.Events = new OpenIdConnectEvents
+            {
+                OnRedirectToIdentityProvider = ctx =>
+                {
+                    if (ctx.ProtocolMessage.RedirectUri?.StartsWith("http://") == true)
+                        ctx.ProtocolMessage.RedirectUri = "https://" + ctx.ProtocolMessage.RedirectUri[7..];
+                    return Task.CompletedTask;
+                },
+                OnAuthorizationCodeReceived = ctx =>
+                {
+                    if (ctx.TokenEndpointRequest?.RedirectUri?.StartsWith("http://") == true)
+                        ctx.TokenEndpointRequest.RedirectUri = "https://" + ctx.TokenEndpointRequest.RedirectUri[7..];
+                    return Task.CompletedTask;
+                }
+            };
 
         return services;
     }

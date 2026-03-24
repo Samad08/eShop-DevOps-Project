@@ -17,7 +17,7 @@ test('WebSPA: full checkout flow', async ({ page }) => {
   await expect(page.getByText('Log Out')).toBeVisible({ timeout: 20_000 });
 
   // ── Step 2: Verify catalog ────────────────────────────────────────────────
-  await page.goto('/catalog');
+  // Angular already navigated to /catalog after the OIDC redirect — no goto needed
   await page.waitForSelector('.esh-catalog-item', { timeout: 30_000 });
   const items = page.locator('.esh-catalog-item');
   await expect(items).toHaveCount(12);
