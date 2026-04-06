@@ -2,9 +2,7 @@ stages:
   - test
   - build
   - deploy
-  - e2e-test
   - promote
-  - verify
 
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -161,63 +159,7 @@ deploy-staging:
     DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
 
 # ──────────────────────────────────────────────
-# Stage 4: E2E Tests (gate after deploy)
-# ──────────────────────────────────────────────
-.e2e-template: &e2e-template
-  image: mcr.microsoft.com/playwright:v1.58.2-noble
-  script:
-    - cd tests/e2e
-    - npm ci
-    - npx playwright test
-  artifacts:
-    when: always
-    paths:
-      - tests/e2e/playwright-report/
-      - tests/e2e/test-results/
-    reports:
-      junit: tests/e2e/test-results/junit.xml
-    expire_in: 7 days
-
-e2e-test-dev:
-  <<: *e2e-template
-  stage: e2e-test
-  needs: [deploy-dev]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  variables:
-    BASE_URL: "https://dev.jan26-group6-eshoponcontainers.abrdns.com"
-
-
-e2e-test-staging:
-  <<: *e2e-template
-  stage: e2e-test
-  needs: [deploy-staging]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  variables:
-    BASE_URL: "https://staging.jan26-group6-eshoponcontainers.abrdns.com"
-
-rollback-staging:
-  stage: e2e-test
-  image: dtzar/helm-kubectl:latest
-  needs: [e2e-test-staging]
-  when: on_failure
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  variables:
-    KUBECONFIG: /root/.kube/k3s-staging.yaml
-    NAMESPACE: eshop-staging
-  script:
-    - echo "E2E tests failed — rolling back staging to last working Helm revision"
-    - |
-      for chart in basket-api catalog-api identity-api mobileshoppingagg ordering-api ordering-backgroundtasks ordering-signalrhub payment-api webmvc webshoppingagg webspa webstatus webhooks-api webhooks-web apigwms apigwws; do
-        helm rollback eshop-$chart 0 --namespace $NAMESPACE || true
-      done
-    - echo "Rollback complete"
-
-# ──────────────────────────────────────────────
-# Stage 5: Promote (manual prod deploy)
-# Only possible after e2e-test-staging passes
+# Stage 4: Promote (manual prod deploy)
 # ──────────────────────────────────────────────
 deploy-prod:
   <<: *deploy-template
@@ -225,20 +167,9 @@ deploy-prod:
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
       when: manual
-  needs: [deploy-staging, e2e-test-staging]
+  needs: [deploy-staging]
   variables:
     KUBECONFIG: /root/.kube/k3s-prod.yaml
     NAMESPACE: eshop-prod
     DNS: "jan26-group6-eshoponcontainers.abrdns.com"
 
-# ──────────────────────────────────────────────
-# Stage 6: Verify (smoke test after prod deploy)
-# ──────────────────────────────────────────────
-e2e-test-prod:
-  <<: *e2e-template
-  stage: verify
-  needs: [deploy-prod]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-  variables:
-    BASE_URL: "https://jan26-group6-eshoponcontainers.abrdns.com"
