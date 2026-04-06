@@ -205,6 +205,7 @@ static class ServiceCollectionExtensions
                     return Task.CompletedTask;
                 }
             };
+        });
 
         return services;
     }
