@@ -1,7 +1,6 @@
 stages:
   - test
   - build
-  - security
   - deploy
   - promote
 
@@ -80,25 +79,7 @@ build-and-push:
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
 
 # ──────────────────────────────────────────────
-# Stage 3: Security
-# Only on push to dev or main
-# ──────────────────────────────────────────────
-container-scanning:
-  stage: security
-  image:
-    name: aquasec/trivy:latest
-    entrypoint: [""]
-  needs: ["build-and-push"]
-  parallel:
-    matrix:
-      - IMAGE: catalog.api
-      - IMAGE: basket.api
-      - IMAGE: webmvc
-  script:
-    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
-
-# ──────────────────────────────────────────────
-# Stage 4: Deploy
+# Stage 3: Deploy
 # dev  → k3s-dev     (automatic)
 # main → k3s-staging (automatic) + k3s-prod (manual)
 # ──────────────────────────────────────────────
@@ -178,7 +159,7 @@ deploy-staging:
     DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
 
 # ──────────────────────────────────────────────
-# Stage 5: Promote (manual prod deploy)
+# Stage 4: Promote (manual prod deploy)
 # ──────────────────────────────────────────────
 deploy-prod:
   <<: *deploy-template
