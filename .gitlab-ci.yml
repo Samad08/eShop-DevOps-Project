@@ -151,6 +151,23 @@ container-scanning:
           || true
       done
 
+deploy-monitoring-dev:
+  stage: deploy
+  image: dtzar/helm-kubectl:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+  variables:
+    KUBECONFIG: /root/.kube/k3s-dev.yaml
+  script:
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+    - |
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        --namespace monitoring \
+        --create-namespace \
+        --set grafana.adminPassword=admin \
+        --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+
 deploy-dev:
   <<: *deploy-template
   rules:
