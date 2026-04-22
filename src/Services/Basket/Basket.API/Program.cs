@@ -1,5 +1,4 @@
-﻿using Prometheus;
-var configuration = GetConfiguration();
+﻿var configuration = GetConfiguration();
 
 Log.Logger = CreateSerilogLogger(configuration);
 
@@ -46,7 +45,6 @@ IWebHost BuildWebHost(IConfiguration configuration, string[] args) =>
             options.ConfigPath = "/Failing";
             options.NotFilteredPaths.AddRange(new[] { "/hc", "/liveness" });
         })
-        .UseHttpMetrics()
         .UseStartup<Startup>()
         .UseContentRoot(Directory.GetCurrentDirectory())
         .UseSerilog()
