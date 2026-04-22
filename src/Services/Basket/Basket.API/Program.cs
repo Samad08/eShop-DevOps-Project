@@ -40,6 +40,7 @@ IWebHost BuildWebHost(IConfiguration configuration, string[] args) =>
 
         })
         .ConfigureAppConfiguration(x => x.AddConfiguration(configuration))
+        .UseHttpMetrics()
         .UseFailing(options =>
         {
             options.ConfigPath = "/Failing";
