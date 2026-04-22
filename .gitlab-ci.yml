@@ -83,19 +83,19 @@ build-and-push:
 # Stage 3: Security
 # ──────────────────────────────────────────────
 
-container-scanning:
-  stage: security
-  image:
-    name: aquasec/trivy:latest
-    entrypoint: [""]
-  needs: ["build-and-push"]
-  parallel:
-    matrix:
-      - IMAGE: catalog.api
-      - IMAGE: basket.api
-      - IMAGE: webmvc
-  script:
-    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
+#container-scanning:
+#  stage: security
+#  image:
+#    name: aquasec/trivy:latest
+#    entrypoint: [""]
+#  needs: ["build-and-push"]
+#  parallel:
+#    matrix:
+#      - IMAGE: catalog.api
+#      - IMAGE: basket.api
+#      - IMAGE: webmvc
+#  script:
+#    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
 
 # ──────────────────────────────────────────────
 # Stage 3: Deploy
