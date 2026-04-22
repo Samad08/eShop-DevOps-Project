@@ -1,4 +1,5 @@
-﻿var configuration = GetConfiguration();
+﻿using Prometheus;
+var configuration = GetConfiguration();
 
 Log.Logger = CreateSerilogLogger(configuration);
 
