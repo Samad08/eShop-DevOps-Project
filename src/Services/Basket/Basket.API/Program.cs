@@ -40,12 +40,12 @@ IWebHost BuildWebHost(IConfiguration configuration, string[] args) =>
 
         })
         .ConfigureAppConfiguration(x => x.AddConfiguration(configuration))
-        .UseHttpMetrics()
         .UseFailing(options =>
         {
             options.ConfigPath = "/Failing";
             options.NotFilteredPaths.AddRange(new[] { "/hc", "/liveness" });
         })
+        .UseHttpMetrics()
         .UseStartup<Startup>()
         .UseContentRoot(Directory.GetCurrentDirectory())
         .UseSerilog()
