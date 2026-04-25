@@ -179,7 +179,7 @@ verify-monitoring:
     - POD_NAME=$(kubectl get pods -l app=basket-api -n eshop-dev -o jsonpath='{.items[0].metadata.name}')
     - echo "Testing from inside pod $POD_NAME"
     # Execute the curl command INSIDE the pod to its own localhost
-    - kubectl exec -n eshop-dev $POD_NAME -- curl -s http://localhost/metrics | head -n 20
+    - kubectl exec -n eshop-dev $POD_NAME -- wget -qO - http://localhost/metrics | head -n 20
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
 
