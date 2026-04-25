@@ -7,7 +7,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: basket # Matches the label in your Catalog deployment
+      app: basket-api # Matches the label in your Basket deployment
   endpoints:
   - port: http
     path: /metrics
