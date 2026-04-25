@@ -168,20 +168,20 @@ deploy-monitoring-dev:
         --set grafana.adminPassword=admin \
         --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
 
-#verify-monitoring:
-#  stage: deploy
-#  image: dtzar/helm-kubectl:latest
-#  script:
-#    - export KUBECONFIG=/root/.kube/k3s-dev.yaml
-#    # 1. Check if the pods are running
-#    - kubectl get pods -n eshop-dev
-#    # 2. Find the Basket Pod IP and try to curl its metrics
-#    - BASKET_IP=$(kubectl get pod -l app=basket-api -n eshop-dev -o jsonpath='{.items[0].status.podIP}')
-#    - echo "Basket Pod IP is $BASKET_IP"
-#    - apk add curl # Install curl in the runner container
-#    - curl -v http://$BASKET_IP/metrics | head -n 20
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "dev"
+verify-monitoring:
+  stage: deploy
+  image: dtzar/helm-kubectl:latest
+  script:
+    - export KUBECONFIG=/root/.kube/k3s-dev.yaml
+    # Check if the pods are running
+    - kubectl get pods -n eshop-dev
+    # Find a running pod name to use as a "jump box" (e.g., the basket pod itself!)
+    - POD_NAME=$(kubectl get pods -l app=basket-api -n eshop-dev -o jsonpath='{.items[0].metadata.name}')
+    - echo "Testing from inside pod $POD_NAME"
+    # Execute the curl command INSIDE the pod to its own localhost
+    - kubectl exec -n eshop-dev $POD_NAME -- curl -s http://localhost/metrics | head -n 20
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
 
 deploy-dev:
   <<: *deploy-template
