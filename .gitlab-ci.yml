@@ -203,7 +203,7 @@ deploy-prod:
     # Apply the ServiceMonitor so Prometheus knows to scrape our services
     - |
       sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
-        kubernetes/monitoring/servicemonitor.yaml | kubectl apply -f -
+        kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
 
 deploy-monitoring-dev:
   <<: *monitoring-template
