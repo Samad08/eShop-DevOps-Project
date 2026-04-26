@@ -83,19 +83,19 @@ build-and-push:
 # Stage 3: Security
 # ──────────────────────────────────────────────
 
-#container-scanning:
-#  stage: security
-#  image:
-#    name: aquasec/trivy:latest
-#    entrypoint: [""]
-#  needs: ["build-and-push"]
-#  parallel:
-#    matrix:
-#      - IMAGE: catalog.api
-#      - IMAGE: basket.api
-#      - IMAGE: webmvc
-#  script:
-#    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
+container-scanning:
+  stage: security
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  needs: ["build-and-push"]
+  parallel:
+    matrix:
+      - IMAGE: catalog.api
+      - IMAGE: basket.api
+      - IMAGE: webmvc
+  script:
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
 
 # ──────────────────────────────────────────────
 # Stage 3: Deploy
@@ -150,36 +150,6 @@ build-and-push:
           --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
           || true
       done
-
-deploy-monitoring-dev:
-  stage: deploy
-  image: dtzar/helm-kubectl:latest
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-  variables:
-    KUBECONFIG: /root/.kube/k3s-dev.yaml
-  script:
-    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    - helm repo update
-    - |
-      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-        --namespace monitoring \
-        --create-namespace \
-        --set grafana.adminPassword=admin \
-        --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
-
-verify-monitoring:
-  stage: deploy
-  image: dtzar/helm-kubectl:latest
-  script:
-    - export KUBECONFIG=/root/.kube/k3s-dev.yaml
-    # 1. Get the Service name or Pod IP for the Basket API
-    - BASKET_IP=$(kubectl get pod -l app=basket-api -n eshop-dev -o jsonpath='{.items[0].status.podIP}')
-    - echo "Target Basket IP is $BASKET_IP"
-    # 2. Run a temporary curl pod to scrape the metrics from the Basket IP
-    - kubectl run --rm -i --restart=Never monitor-tester --image=curlimages/curl -n eshop-dev -- curl http://$BASKET_IP/metrics
-  rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
 
 deploy-dev:
   <<: *deploy-template

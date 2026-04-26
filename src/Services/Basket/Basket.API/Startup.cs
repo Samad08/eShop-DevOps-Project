@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Prometheus;
 
 namespace Microsoft.eShopOnContainers.Services.Basket.API;
 public class Startup
@@ -167,7 +166,6 @@ public class Startup
             });
 
         app.UseRouting();
-        app.UseHttpMetrics();
         app.UseCors("CorsPolicy");
         ConfigureAuth(app);
 
@@ -178,7 +176,6 @@ public class Startup
             endpoints.MapGrpcService<BasketService>();
             endpoints.MapDefaultControllerRoute();
             endpoints.MapControllers();
-            endpoints.MapMetrics();
             endpoints.MapGet("/_proto/", async ctx =>
             {
                 ctx.Response.ContentType = "text/plain";
