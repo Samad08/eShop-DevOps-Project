@@ -131,6 +131,7 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
           --set ingress.annotations."kubernetes\.io/ingress\.class"=traefik \
+          --force-conflicts \
           || true
       done
 
@@ -215,6 +216,37 @@ deploy-monitoring-dev:
     NAMESPACE: eshop-dev
     DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
     ENV_SUFFIX: dev
+  script:
+    # Step 1 - Check all monitoring pods
+    - echo "=== MONITORING PODS ==="
+    - kubectl get pods -n monitoring
+
+    # Step 2 - Check app pods have been redeployed with new image
+    - echo "=== APP PODS ==="
+    - kubectl get pods -n eshop-dev
+
+    # Step 3 - Check ServiceMonitor exists
+    - echo "=== SERVICE MONITORS ==="
+    - kubectl get servicemonitor -n monitoring
+
+    # Step 4 - Check Prometheus targets via API
+    - echo "=== PROMETHEUS TARGETS ==="
+    - |
+      kubectl run curl-test --image=curlimages/curl --rm -it --restart=Never \
+        -n monitoring \
+        -- curl -s http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets \
+        | python3 -m json.tool 2>/dev/null | grep -E '"health"|"job"|"scrapeUrl"' | head -40
+
+    # Step 5 - Check /metrics endpoint on basket service
+    - echo "=== BASKET /metrics ENDPOINT ==="
+    - |
+      kubectl run curl-test2 --image=curlimages/curl --rm -it --restart=Never \
+        -n eshop-dev \
+        -- curl -s http://eshop-basket-api/metrics | head -20
+
+    # Step 6 - Check services have monitor=true label
+    - echo "=== SERVICES WITH monitor=true LABEL ==="
+    - kubectl get svc -n eshop-dev -l monitor=true
 
 #deploy-monitoring-staging:
 #  <<: *monitoring-template
