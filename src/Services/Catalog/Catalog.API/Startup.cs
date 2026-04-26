@@ -19,7 +19,7 @@ public class Startup
             .AddIntegrationServices(Configuration)
             .AddEventBus(Configuration)
             .AddSwagger(Configuration)
-            .AddCustomHealthCheck(Configuration);
+            .AddCustomHealthCheck(Configuration)
             .AddPrometheusMonitoring();
 
         var container = new ContainerBuilder();
