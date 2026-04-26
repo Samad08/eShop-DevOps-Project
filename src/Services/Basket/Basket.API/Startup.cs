@@ -62,7 +62,7 @@ public class Startup
         ConfigureAuthService(services);
 
         services.AddCustomHealthCheck(Configuration);
-
+        services.AddPrometheusMonitoring();
         services.Configure<BasketSettings>(Configuration);
 
         //By connecting here we are making sure that our service
@@ -166,6 +166,7 @@ public class Startup
             });
 
         app.UseRouting();
+        app.UsePrometheusMonitoring();
         app.UseCors("CorsPolicy");
         ConfigureAuth(app);
 
@@ -176,6 +177,7 @@ public class Startup
             endpoints.MapGrpcService<BasketService>();
             endpoints.MapDefaultControllerRoute();
             endpoints.MapControllers();
+            endpoints.MapPrometheusMonitoring();
             endpoints.MapGet("/_proto/", async ctx =>
             {
                 ctx.Response.ContentType = "text/plain";

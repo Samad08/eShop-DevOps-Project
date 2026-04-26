@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.identity }}
   labels:
+    monitor: "true"
     app: {{ template "identity-api.name" . }}
     chart: {{ template "identity-api.chart" . }}
     release: {{ .Release.Name }}

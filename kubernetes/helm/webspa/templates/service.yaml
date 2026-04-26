@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.spa }}
   labels:
+    monitor: "true"
     app: {{ template "webspa.name" . }}
     chart: {{ template "webspa.chart" . }}
     release: {{ .Release.Name }}

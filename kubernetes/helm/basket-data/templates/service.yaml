@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.inf.redis.basket.svc }}
   labels:
+    monitor: "true"
     app: {{ template "basket-data.name" . }}
     chart: {{ template "basket-data.chart" . }}
     release: {{ .Release.Name }}

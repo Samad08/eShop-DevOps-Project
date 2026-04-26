@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.payment }}
   labels:
+    monitor: "true"
     app: {{ template "payment-api.name" . }}
     chart: {{ template "payment-api.chart" . }}
     release: {{ .Release.Name }}

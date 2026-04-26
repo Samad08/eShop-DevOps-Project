@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.ordering }}
   labels:
+    monitor: "true"
     app: {{ template "ordering-api.name" . }}
     chart: {{ template "ordering-api.chart" . }}
     release: {{ .Release.Name }}

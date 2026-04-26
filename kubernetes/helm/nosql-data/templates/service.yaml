@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ template "mongo-name" . }}
   labels:
+    monitor: "true"
     app: {{ template "nosql-data.name" . }}
     chart: {{ template "nosql-data.chart" . }}
     release: {{ .Release.Name }}

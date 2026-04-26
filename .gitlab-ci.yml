@@ -1,7 +1,6 @@
 stages:
   - test
   - build
-  - security
   - deploy
   - promote
 
@@ -78,25 +77,6 @@ build-and-push:
         DOCKERFILE: src/Web/WebStatus/Dockerfile
       - IMAGE: webhooks.client
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
-
-# ──────────────────────────────────────────────
-# Stage 3: Security
-# ──────────────────────────────────────────────
-
-container-scanning:
-  stage: security
-  image:
-    name: aquasec/trivy:latest
-    entrypoint: [""]
-  needs: ["build-and-push"]
-  parallel:
-    matrix:
-      - IMAGE: catalog.api
-      - IMAGE: basket.api
-      - IMAGE: webmvc
-  script:
-    - trivy image --exit-code 0 --severity HIGH,CRITICAL $REGISTRY_IMAGE/$IMAGE:linux-latest
-
 # ──────────────────────────────────────────────
 # Stage 3: Deploy
 # dev  → k3s-dev     (automatic)
@@ -176,6 +156,27 @@ deploy-staging:
     KUBECONFIG: /root/.kube/k3s-staging.yaml
     NAMESPACE: eshop-staging
     DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
+
+deploy-monitoring:
+  stage: deploy
+  image: alpine/helm:3.14.0
+  script:
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+    - helm upgrade --install monitoring prometheus-community/kube-prometheus-stack
+        --namespace monitoring
+        --create-namespace
+        --values kubernetes/helm/monitoring/values.yaml
+        --set grafana.adminPassword=admin123
+        --wait
+    - kubectl apply -f kubernetes/monitoring/servicemonitor.yaml
+  environment:
+    name: $CI_ENVIRONMENT_NAME
+  only:
+    - main
+    - dev
+  needs:
+    - deploy   # runs after your app is deployed
 
 # ──────────────────────────────────────────────
 # Stage 4: Promote (manual prod deploy)

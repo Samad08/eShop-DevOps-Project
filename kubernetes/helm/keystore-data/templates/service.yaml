@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.inf.redis.keystore.svc }}
   labels:
+    monitor: "true"
     app: {{ template "keystore-data.name" . }}
     chart: {{ template "keystore-data.chart" . }}
     release: {{ .Release.Name }}

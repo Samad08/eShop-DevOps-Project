@@ -1,0 +1,54 @@
+# kube-prometheus-stack values
+# Install: helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#          -n monitoring --create-namespace -f values.yaml
+
+grafana:
+  enabled: true
+  adminPassword: "passsword"   # override via CI/CD secret
+  ingress:
+    enabled: true
+    ingressClassName: traefik               # k3s uses traefik by default
+    hosts:
+      - grafana.dev.yourdomain.com          # change per environment
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      dotnet-overview:
+        gnetId: 10427         # ASP.NET Core dashboard from grafana.com
+        revision: 1
+        datasource: Prometheus
+
+prometheus:
+  prometheusSpec:
+    # Watch ALL namespaces for ServiceMonitors (so your app namespace is included)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path    # k3s default StorageClass
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+alertmanager:
+  enabled: false   # enable later when you add alert rules

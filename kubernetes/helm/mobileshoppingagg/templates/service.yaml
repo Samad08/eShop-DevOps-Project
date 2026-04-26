@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.mobileshoppingagg }}
   labels:
+    monitor: "true"
     app: {{ template "mobileshoppingagg.name" . }}
     chart: {{ template "mobileshoppingagg.chart" . }}
     release: {{ .Release.Name }}
