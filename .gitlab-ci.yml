@@ -18,6 +18,8 @@ variables:
 unit-tests:
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:7.0
+  before_script:
+    - dotnet nuget add source "https://api.nuget.org/v3/index.json" --name nuget.org
   script:
     - dotnet restore src/eShopOnContainers-ServicesAndWebApps.sln
     - dotnet test src/BuildingBlocks/EventBus/EventBus.Tests/EventBus.Tests.csproj --no-restore --verbosity normal
