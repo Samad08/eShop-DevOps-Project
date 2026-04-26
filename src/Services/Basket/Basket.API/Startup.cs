@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
+using Prometheus;
+
 
 namespace Microsoft.eShopOnContainers.Services.Basket.API;
 public class Startup
