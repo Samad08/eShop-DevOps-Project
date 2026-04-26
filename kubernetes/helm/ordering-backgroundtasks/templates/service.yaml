@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.orderingbackgroundtasks }}
   labels:
-    monitor: "true"
     app: {{ template "ordering-backgroundtasks.name" . }}
     chart: {{ template "ordering-backgroundtasks.chart" . }}
     release: {{ .Release.Name }}

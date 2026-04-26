@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.webhooksweb }}
   labels:
-    monitor: "true"
     app: {{ template "webhooks-web.name" . }}
     chart: {{ template "webhooks-web.chart" . }}
     release: {{ .Release.Name }}

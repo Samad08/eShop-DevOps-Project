@@ -9,7 +9,7 @@ grafana:
     enabled: true
     ingressClassName: traefik               # k3s uses traefik by default
     hosts:
-      - grafana.dev.yourdomain.com          # change per environment
+      - grafana.dev.yourdomain.com          # pipeline overwrites this
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
 

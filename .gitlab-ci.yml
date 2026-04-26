@@ -3,6 +3,7 @@ stages:
   - build
   - deploy
   - promote
+  - monitoring
 
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -77,6 +78,7 @@ build-and-push:
         DOCKERFILE: src/Web/WebStatus/Dockerfile
       - IMAGE: webhooks.client
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
+
 # ──────────────────────────────────────────────
 # Stage 3: Deploy
 # dev  → k3s-dev     (automatic)
@@ -111,13 +113,14 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set inf.tls.enabled=true \
           --set "ingress.hosts={$DNS}" \
-          --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
+          --set ingress.annotations."kubernetes\.io/ingress\.class"=traefik \
           --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
           --set inf.registry.login=$DEPLOY_TOKEN_USER \
           --set inf.registry.pwd=$DEPLOY_TOKEN_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
+          --set service.labels.monitor=true \
           || true
       done
     - |
@@ -127,7 +130,7 @@ build-and-push:
           --values app.yaml --values inf.yaml \
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
-          --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
+          --set ingress.annotations."kubernetes\.io/ingress\.class"=traefik \
           || true
       done
 
@@ -157,27 +160,6 @@ deploy-staging:
     NAMESPACE: eshop-staging
     DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
 
-deploy-monitoring:
-  stage: deploy
-  image: alpine/helm:3.14.0
-  script:
-    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    - helm repo update
-    - helm upgrade --install monitoring prometheus-community/kube-prometheus-stack
-        --namespace monitoring
-        --create-namespace
-        --values kubernetes/helm/monitoring/values.yaml
-        --set grafana.adminPassword=admin123
-        --wait
-    - kubectl apply -f kubernetes/monitoring/servicemonitor.yaml
-  environment:
-    name: $CI_ENVIRONMENT_NAME
-  only:
-    - main
-    - dev
-  needs:
-    - deploy   # runs after your app is deployed
-
 # ──────────────────────────────────────────────
 # Stage 4: Promote (manual prod deploy)
 # ──────────────────────────────────────────────
@@ -193,3 +175,66 @@ deploy-prod:
     NAMESPACE: eshop-prod
     DNS: "jan26-group6-eshoponcontainers.abrdns.com"
 
+# ──────────────────────────────────────────────
+# Stage 5: Monitoring (deploy Prometheus + Grafana)
+# Runs after deploy on each branch, manual on prod
+# ──────────────────────────────────────────────
+
+# Shared monitoring template
+.monitoring-template: &monitoring-template
+  stage: monitoring
+  image: dtzar/helm-kubectl:latest
+  script:
+    # Add prometheus-community helm repo
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+
+    # Deploy kube-prometheus-stack
+    - |
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        --namespace monitoring-$ENV_SUFFIX \
+        --create-namespace \
+        --values kubernetes/helm/monitoring/values.yaml \
+        --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
+        --set grafana.adminPassword=admin123 \
+        --set grafana.ingress.hosts="{grafana.$DNS}" \
+        --wait --timeout 5m
+
+    # Apply the ServiceMonitor so Prometheus knows to scrape our services
+    - |
+      sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
+        kubernetes/monitoring/servicemonitor.yaml | kubectl apply -f -
+
+deploy-monitoring-dev:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+  needs: [deploy-dev]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-dev.yaml
+    NAMESPACE: eshop-dev
+    DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: dev
+
+#deploy-monitoring-staging:
+#  <<: *monitoring-template
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+#  needs: [deploy-staging]
+#  variables:
+#    KUBECONFIG: /root/.kube/k3s-staging.yaml
+#    NAMESPACE: eshop-staging
+#    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
+#    ENV_SUFFIX: staging
+#
+#deploy-monitoring-prod:
+#  <<: *monitoring-template
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+#      when: manual
+#  needs: [deploy-prod]
+#  variables:
+#    KUBECONFIG: /root/.kube/k3s-prod.yaml
+#    NAMESPACE: eshop-prod
+#    DNS: "jan26-group6-eshoponcontainers.abrdns.com"
+#    ENV_SUFFIX: prod

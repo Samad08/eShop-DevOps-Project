@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.catalog }}
   labels:
-    monitor: "true"
     app: {{ template "catalog-api.name" . }}
     chart: {{ template "catalog-api.chart" . }}
     release: {{ .Release.Name }}

@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.inf.eventbus.svc }}
   labels:
-    monitor: "true"
     app: {{ template "rabbitmq.name" . }}
     chart: {{ template "rabbitmq.chart" . }}
     release: {{ .Release.Name }}

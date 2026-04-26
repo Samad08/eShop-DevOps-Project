@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.status }}
   labels:
-    monitor: "true"
     app: {{ template "webstatus.name" . }}
     chart: {{ template "webstatus.chart" . }}
     release: {{ .Release.Name }}

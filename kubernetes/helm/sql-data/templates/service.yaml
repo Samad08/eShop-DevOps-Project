@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ template "sql-name" . }}
   labels:
-    monitor: "true"
     app: {{ template "sql-data.name" . }}
     chart: {{ template "sql-data.chart" . }}
     release: {{ .Release.Name }}

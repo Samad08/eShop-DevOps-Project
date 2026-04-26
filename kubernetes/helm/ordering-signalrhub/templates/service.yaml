@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ .Values.app.svc.orderingsignalrhub }}
   labels:
-    monitor: "true"
     app: {{ template "ordering-signalrhub.name" . }}
     chart: {{ template "ordering-signalrhub.chart" . }}
     release: {{ .Release.Name }}
