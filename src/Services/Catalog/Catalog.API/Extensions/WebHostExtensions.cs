@@ -2,6 +2,7 @@
 
 public static class WebHostExtensions
 {
+    /*
     public static bool IsInKubernetes(this IWebHost host)
     {
         var cfg = host.Services.GetService<IConfiguration>();
@@ -58,6 +59,7 @@ public static class WebHostExtensions
 
         return host;
     }
+    */
 
     private static void InvokeSeeder<TContext>(Action<TContext, IServiceProvider> seeder, TContext context, IServiceProvider services)
         where TContext : DbContext
