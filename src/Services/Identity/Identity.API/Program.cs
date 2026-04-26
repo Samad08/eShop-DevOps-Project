@@ -10,6 +10,7 @@ builder.AddCustomIdentityServer();
 builder.AddCustomAuthentication();
 builder.AddCustomHealthChecks();
 builder.AddCustomApplicationServices();
+builder.Services.AddPrometheusMonitoring();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -28,15 +29,14 @@ app.UseStaticFiles();
 app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
 
 app.UseRouting();
-app.UseMonitoring();
-app.MapMonitoring();
+app.UsePrometheusMonitoring();
 app.UseIdentityServer();
 
 
 app.UseAuthorization();
 
 app.MapDefaultControllerRoute();
-
+app.MapPrometheusMonitoring();
 app.MapHealthChecks("/hc", new HealthCheckOptions()
 {
     Predicate = _ => true,
