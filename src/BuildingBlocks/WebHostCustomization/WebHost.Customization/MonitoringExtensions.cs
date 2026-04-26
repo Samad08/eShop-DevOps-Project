@@ -11,7 +11,7 @@ public static class MonitoringExtensions
     /// Registers Prometheus metrics collection.
     /// Call this in Program.cs → builder.Services.AddMonitoring()
     /// </summary>
-    public static IServiceCollection AddMonitoring(this IServiceCollection services)
+    public static IServiceCollection AddPrometheusMonitoring(this IServiceCollection services)
     {
         // Enables HTTP request duration/count metrics automatically
         services.AddHttpClient(); // ensures HttpClient factory metrics work too
@@ -22,7 +22,7 @@ public static class MonitoringExtensions
     /// Maps the /metrics endpoint and enables HTTP middleware instrumentation.
     /// Call this in Program.cs after app.UseRouting()
     /// </summary>
-    public static IApplicationBuilder UseMonitoring(this IApplicationBuilder app)
+    public static IApplicationBuilder UsePrometheusMonitoring(this IApplicationBuilder app)
     {
         // Instruments every HTTP request automatically
         app.UseHttpMetrics(options =>
@@ -38,7 +38,7 @@ public static class MonitoringExtensions
     /// Maps the /metrics scrape endpoint.
     /// Call this in Program.cs after app.MapControllers()
     /// </summary>
-    public static IEndpointRouteBuilder MapMonitoring(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapPrometheusMonitoring(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapMetrics("/metrics"); // Prometheus scrapes this
         return endpoints;
