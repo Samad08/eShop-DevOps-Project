@@ -192,7 +192,7 @@ deploy-prod:
     # Deploy kube-prometheus-stack
     - |
       helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-        --namespace monitoring-$ENV_SUFFIX \
+        --namespace monitoring \
         --create-namespace \
         --values kubernetes/helm/monitoring/values.yaml \
         --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
