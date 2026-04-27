@@ -7,13 +7,10 @@ grafana:
   adminPassword: "passsword"   # override via CI/CD secret
   ingress:
     enabled: true
-    ingressClassName: traefik               # k3s uses traefik by default
     annotations:
       kubernetes.io/ingress.class: traefik
     hosts:
       - grafana.dev.jan26-group6-eshoponcontainers.abrdns.com
-    annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: web
     path: /
     pathType: Prefix
 
