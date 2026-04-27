@@ -13,7 +13,8 @@ spec:
     matchLabels:
       monitor: "true"            # your services need this label (see below)
   endpoints:
-    - port: http                 # must match the port name in your Service YAMLs
+    - port: http
+      targetPort: 80
       path: /metrics
       interval: 15s
       scheme: http

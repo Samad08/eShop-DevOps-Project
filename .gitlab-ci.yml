@@ -125,11 +125,11 @@ build-and-push:
       done
 
     - |
-      for svc in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
-        echo "Labeling eshop-$svc..."
-        kubectl label svc eshop-$svc monitor=true \
-          --namespace eshop-dev \
-          --overwrite && echo "OK" || echo "FAILED - service may not exist"
+      for svc in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub ordering-backgroundtasks; do
+        echo "Labeling $svc..."
+        kubectl label svc $svc monitor=true \
+          --namespace $NAMESPACE \
+          --overwrite && echo "OK" || echo "FAILED"
       done
 
     - |
@@ -189,17 +189,13 @@ deploy-prod:
 # Stage 5: Monitoring (deploy Prometheus + Grafana)
 # Runs after deploy on each branch, manual on prod
 # ──────────────────────────────────────────────
-
-# Shared monitoring template
 .monitoring-template: &monitoring-template
   stage: monitoring
   image: dtzar/helm-kubectl:latest
   script:
-    # Add prometheus-community helm repo
+    # Deploy Prometheus + Grafana via Helm
     - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     - helm repo update
-
-    # Deploy kube-prometheus-stack
     - |
       helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
         --namespace monitoring \
@@ -208,13 +204,81 @@ deploy-prod:
         --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
         --set grafana.adminPassword=admin123 \
         --set grafana.ingress.hosts="{grafana.$DNS}" \
-        --wait --timeout 5m
-
-    # Apply the ServiceMonitor so Prometheus knows to scrape our services
+        --wait --timeout 10m
+ 
+    # Apply ServiceMonitor with correct app namespace injected
     - |
       sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
         kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
-
+ 
+    # Force rollout restart so pods pick up new image that has /metrics endpoint
+    # (pods deployed before Prometheus instrumentation was added need to be recycled)
+    - echo "=== RESTARTING APP PODS TO PICK UP NEW IMAGE ==="
+    - |
+      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub ordering-backgroundtasks; do
+        echo "Restarting eshop-$deploy..."
+        kubectl rollout restart deployment/eshop-$deploy \
+          --namespace $NAMESPACE && echo "OK" || echo "SKIPPED"
+      done
+    # Wait for rollouts to finish before verifying
+    - echo "Waiting for rollouts to complete..."
+    - |
+      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
+        kubectl rollout status deployment/eshop-$deploy \
+          --namespace $NAMESPACE --timeout=3m || true
+      done
+ 
+    # ── Verification ──────────────────────────────
+    - echo "=== MONITORING PODS ==="
+    - kubectl get pods -n monitoring
+ 
+    - echo "=== APP PODS ==="
+    - kubectl get pods -n $NAMESPACE
+ 
+    - echo "=== SERVICE MONITORS ==="
+    - kubectl get servicemonitor -n monitoring
+ 
+    - echo "=== SERVICES WITH monitor=true LABEL ==="
+    - kubectl get svc -n $NAMESPACE -l monitor=true
+ 
+    # Check /metrics on basket service
+    - echo "=== BASKET /metrics ==="
+    - |
+      kubectl delete pod curl-test -n $NAMESPACE --ignore-not-found
+      kubectl run curl-test \
+        --image=curlimages/curl \
+        --restart=Never \
+        --namespace $NAMESPACE \
+        -- curl -s http://basket-api/metrics
+      sleep 15
+      kubectl logs curl-test -n $NAMESPACE 2>/dev/null | head -20 || true
+      kubectl delete pod curl-test -n $NAMESPACE --ignore-not-found
+ 
+    # Check Prometheus targets
+    - echo "=== PROMETHEUS TARGETS (up/down) ==="
+    - |
+      kubectl delete pod curl-prom -n monitoring --ignore-not-found
+      kubectl run curl-prom \
+        --image=curlimages/curl \
+        --restart=Never \
+        --namespace monitoring \
+        -- curl -s "http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets?state=active"
+      sleep 15
+      kubectl logs curl-prom -n monitoring 2>/dev/null | python3 -c "import sys, json
+      try:
+        data = json.load(sys.stdin)
+        targets = data.get('data', {}).get('activeTargets', [])
+        print(f'Total active targets: {len(targets)}')
+        for t in targets:
+          job = t.get('labels', {}).get('job', '?')
+          health = t.get('health', '?')
+          url = t.get('scrapeUrl', '?')
+          print(f'  {health:5} | {job} | {url}')
+      except Exception as e:
+        print('Parse error:', e)
+        print(sys.stdin.read())" || true
+      kubectl delete pod curl-prom -n monitoring --ignore-not-found
+ 
 deploy-monitoring-dev:
   <<: *monitoring-template
   rules:
@@ -225,48 +289,6 @@ deploy-monitoring-dev:
     NAMESPACE: eshop-dev
     DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
     ENV_SUFFIX: dev
-  script:
-    # Step 1 - Check all monitoring pods
-    - echo "=== MONITORING PODS ==="
-    - kubectl get pods -n monitoring
-
-    # Step 2 - Check app pods have been redeployed with new image
-    - echo "=== APP PODS ==="
-    - kubectl get pods -n eshop-dev
-
-    # Step 3 - Check ServiceMonitor exists
-    - echo "=== SERVICE MONITORS ==="
-    - kubectl get servicemonitor -n monitoring
-
-    # Debug - show all services and their labels
-    - echo "=== ALL SERVICES IN eshop-dev ==="
-    - kubectl get svc -n eshop-dev --show-labels
-
-    # Step 5 - Check Prometheus targets via API
-    - echo "=== PROMETHEUS TARGETS ==="
-    - |
-      kubectl delete pod curl-test -n monitoring --ignore-not-found
-      kubectl run curl-test \
-        --image=curlimages/curl \
-        --restart=Never \
-        --namespace monitoring \
-        -- curl -s http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets
-      kubectl wait --for=condition=completed pod/curl-test -n monitoring --timeout=30s || true
-      kubectl logs curl-test -n monitoring || true
-      kubectl delete pod curl-test -n monitoring --ignore-not-found
-
-    # Step 6 - Check /metrics on basket service
-    - echo "=== BASKET /metrics ==="
-    - |
-      kubectl delete pod curl-test2 -n eshop-dev --ignore-not-found
-      kubectl run curl-test2 \
-        --image=curlimages/curl \
-        --restart=Never \
-        --namespace eshop-dev \
-        -- curl -s http://eshop-basket-api/metrics
-      kubectl wait --for=condition=completed pod/curl-test2 -n eshop-dev --timeout=30s || true
-      kubectl logs curl-test2 -n eshop-dev | head -20 || true
-      kubectl delete pod curl-test2 -n eshop-dev --ignore-not-found
 
 #deploy-monitoring-staging:
 #  <<: *monitoring-template
