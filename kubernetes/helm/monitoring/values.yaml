@@ -13,7 +13,7 @@ grafana:
     hosts:
       - grafana.dev.jan26-group6-eshoponcontainers.abrdns.com
     annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.entrypoints: web
     path: /
     pathType: Prefix
 
