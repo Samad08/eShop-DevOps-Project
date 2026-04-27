@@ -229,43 +229,36 @@ deploy-monitoring-dev:
     - echo "=== SERVICE MONITORS ==="
     - kubectl get servicemonitor -n monitoring
 
-    # Step 4 - Check Prometheus targets via API (no TTY needed)
-    - echo "=== PROMETHEUS TARGETS ==="
-    - |
-      kubectl run curl-test --image=curlimages/curl \
-        --rm --restart=Never \
-        --namespace monitoring \
-        --command -- \
-        curl -s http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets
-      sleep 5
-      kubectl logs curl-test -n monitoring 2>/dev/null | grep -E '"health"|"job"' | head -40 || true
-
-    # Step 5 - Check /metrics on basket service
-    - echo "=== BASKET /metrics ENDPOINT ==="
-    - |
-      kubectl run curl-test2 --image=curlimages/curl \
-        --rm --restart=Never \
-        --namespace eshop-dev \
-        --command -- \
-        curl -s http://eshop-basket-api/metrics
-      sleep 5
-      kubectl logs curl-test2 -n eshop-dev 2>/dev/null | head -20 || true
-
-    # Step 6 - Check services have monitor=true label
+    # Step 4 - Check services have monitor=true label
     - echo "=== SERVICES WITH monitor=true LABEL ==="
     - kubectl get svc -n eshop-dev -l monitor=true
 
-    # Step 7 - Check Prometheus is actually scraping (query it)
-    - echo "=== PROMETHEUS SCRAPE CHECK ==="
+    # Step 5 - Check Prometheus targets via API
+    - echo "=== PROMETHEUS TARGETS ==="
     - |
-      kubectl run curl-test3 --image=curlimages/curl \
-        --rm --restart=Never \
+      kubectl delete pod curl-test -n monitoring --ignore-not-found
+      kubectl run curl-test \
+        --image=curlimages/curl \
+        --restart=Never \
         --namespace monitoring \
-        --command -- \
-        curl -s "http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/query?query=up"
-      sleep 5
-      kubectl logs curl-test3 -n monitoring 2>/dev/null || true
+        -- curl -s http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets
+      kubectl wait --for=condition=completed pod/curl-test -n monitoring --timeout=30s || true
+      kubectl logs curl-test -n monitoring || true
+      kubectl delete pod curl-test -n monitoring --ignore-not-found
 
+    # Step 6 - Check /metrics on basket service
+    - echo "=== BASKET /metrics ==="
+    - |
+      kubectl delete pod curl-test2 -n eshop-dev --ignore-not-found
+      kubectl run curl-test2 \
+        --image=curlimages/curl \
+        --restart=Never \
+        --namespace eshop-dev \
+        -- curl -s http://eshop-basket-api/metrics
+      kubectl wait --for=condition=completed pod/curl-test2 -n eshop-dev --timeout=30s || true
+      kubectl logs curl-test2 -n eshop-dev | head -20 || true
+      kubectl delete pod curl-test2 -n eshop-dev --ignore-not-found
+      
 #deploy-monitoring-staging:
 #  <<: *monitoring-template
 #  rules:
