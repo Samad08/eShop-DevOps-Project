@@ -123,6 +123,14 @@ build-and-push:
           --set service.labels.monitor=true \
           || true
       done
+      
+    - |
+      for svc in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
+        kubectl label svc eshop-$svc monitor=true \
+          --namespace $NAMESPACE \
+          --overwrite || true
+      done
+
     - |
       for gw in apigwms apigwws; do
         helm upgrade --install eshop-$gw $gw \
@@ -258,7 +266,7 @@ deploy-monitoring-dev:
       kubectl wait --for=condition=completed pod/curl-test2 -n eshop-dev --timeout=30s || true
       kubectl logs curl-test2 -n eshop-dev | head -20 || true
       kubectl delete pod curl-test2 -n eshop-dev --ignore-not-found
-      
+
 #deploy-monitoring-staging:
 #  <<: *monitoring-template
 #  rules:
