@@ -279,7 +279,7 @@ diagnose-ingress:
     KUBECONFIG: /root/.kube/k3s-dev.yaml
   script:
     - echo "=== WORKING APP INGRESS (catalog) ==="
-    - kubectl get ingress eshop-catalog-api -n eshop-dev -o yaml
+    - kubectl get ingress catalog-api -n eshop-dev -o yaml
 
     - echo "=== ALL INGRESSES ==="
     - kubectl get ingress -A
