@@ -8,10 +8,14 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: traefik               # k3s uses traefik by default
+    annotations:
+      kubernetes.io/ingress.class: traefik
     hosts:
-      - grafana.dev.yourdomain.com          # pipeline overwrites this
+      - grafana.dev.jan26-group6-eshoponcontainers.abrdns.com
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    path: /
+    pathType: Prefix
 
   dashboardProviders:
     dashboardproviders.yaml:

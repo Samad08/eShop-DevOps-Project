@@ -203,31 +203,13 @@ deploy-prod:
         --values kubernetes/helm/monitoring/values.yaml \
         --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
         --set grafana.adminPassword=admin123 \
-        --set grafana.ingress.hosts="{grafana.$DNS}" \
         --wait --timeout 10m
  
     # Apply ServiceMonitor with correct app namespace injected
     - |
       sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
         kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
- 
-    # Force rollout restart so pods pick up new image that has /metrics endpoint
-    # (pods deployed before Prometheus instrumentation was added need to be recycled)
-    - echo "=== RESTARTING APP PODS TO PICK UP NEW IMAGE ==="
-    - |
-      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub ordering-backgroundtasks; do
-        echo "Restarting eshop-$deploy..."
-        kubectl rollout restart deployment/eshop-$deploy \
-          --namespace $NAMESPACE && echo "OK" || echo "SKIPPED"
-      done
-    # Wait for rollouts to finish before verifying
-    - echo "Waiting for rollouts to complete..."
-    - |
-      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
-        kubectl rollout status deployment/eshop-$deploy \
-          --namespace $NAMESPACE --timeout=3m || true
-      done
- 
+  
     # ── Verification ──────────────────────────────
     - echo "=== MONITORING PODS ==="
     - kubectl get pods -n monitoring
@@ -263,7 +245,7 @@ deploy-prod:
         --restart=Never \
         --namespace monitoring \
         -- curl -s "http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets?state=active"
-      sleep 15
+      sleep 30
       kubectl logs curl-prom -n monitoring 2>/dev/null \
         | grep -o '"job":"[^"]*"\|"health":"[^"]*"\|"scrapeUrl":"[^"]*"' \
         | paste - - - \
