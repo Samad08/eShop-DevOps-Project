@@ -222,6 +222,10 @@ deploy-prod:
  
     - echo "=== SERVICES WITH monitor=true LABEL ==="
     - kubectl get svc -n $NAMESPACE -l monitor=true
+
+    - echo "=== GRAFANA INGRESS ==="
+    - kubectl get ingress -n monitoring
+    - kubectl describe ingress monitoring-grafana -n monitoring
  
     # Check /metrics on basket service
     - echo "=== BASKET /metrics ==="
