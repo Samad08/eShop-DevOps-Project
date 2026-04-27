@@ -209,24 +209,7 @@ deploy-prod:
     - |
       sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
         kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
-  
-    # ── Verification ──────────────────────────────
-    - echo "=== MONITORING PODS ==="
-    - kubectl get pods -n monitoring
- 
-    - echo "=== APP PODS ==="
-    - kubectl get pods -n $NAMESPACE
- 
-    - echo "=== SERVICE MONITORS ==="
-    - kubectl get servicemonitor -n monitoring
- 
-    - echo "=== SERVICES WITH monitor=true LABEL ==="
-    - kubectl get svc -n $NAMESPACE -l monitor=true
-
-    - echo "=== GRAFANA INGRESS ==="
-    - kubectl get ingress -n monitoring
-    - kubectl describe ingress monitoring-grafana -n monitoring
- 
+   
     # Check /metrics on basket service
     - echo "=== BASKET /metrics ==="
     - |
@@ -266,32 +249,6 @@ deploy-monitoring-dev:
     NAMESPACE: eshop-dev
     DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
     ENV_SUFFIX: dev
-
-
-diagnose-ingress:
-  stage: monitoring
-  image: dtzar/helm-kubectl:latest
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
-      when: always
-  needs: [deploy-monitoring-dev]
-  variables:
-    KUBECONFIG: /root/.kube/k3s-dev.yaml
-  script:
-    - echo "=== WORKING APP INGRESS (catalog) ==="
-    - kubectl get ingress catalog-api -n eshop-dev -o yaml
-
-    - echo "=== ALL INGRESSES ==="
-    - kubectl get ingress -A
-
-    - echo "=== TRAEFIK SERVICE ==="
-    - kubectl get svc -n kube-system | grep traefik
-
-    - echo "=== TRAEFIK ENTRYPOINTS ==="
-    - kubectl describe svc traefik -n kube-system
-
-    - echo "=== GRAFANA INGRESS CURRENT ==="
-    - kubectl get ingress monitoring-grafana -n monitoring -o yaml
 
 
 #deploy-monitoring-staging:
