@@ -123,12 +123,13 @@ build-and-push:
           --set service.labels.monitor=true \
           || true
       done
-      
+
     - |
       for svc in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
+        echo "Labeling eshop-$svc..."
         kubectl label svc eshop-$svc monitor=true \
-          --namespace $NAMESPACE \
-          --overwrite || true
+          --namespace eshop-dev \
+          --overwrite && echo "OK" || echo "FAILED - service may not exist"
       done
 
     - |
@@ -237,9 +238,9 @@ deploy-monitoring-dev:
     - echo "=== SERVICE MONITORS ==="
     - kubectl get servicemonitor -n monitoring
 
-    # Step 4 - Check services have monitor=true label
-    - echo "=== SERVICES WITH monitor=true LABEL ==="
-    - kubectl get svc -n eshop-dev -l monitor=true
+    # Debug - show all services and their labels
+    - echo "=== ALL SERVICES IN eshop-dev ==="
+    - kubectl get svc -n eshop-dev --show-labels
 
     # Step 5 - Check Prometheus targets via API
     - echo "=== PROMETHEUS TARGETS ==="
