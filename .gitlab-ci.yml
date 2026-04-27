@@ -264,19 +264,10 @@ deploy-prod:
         --namespace monitoring \
         -- curl -s "http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets?state=active"
       sleep 15
-      kubectl logs curl-prom -n monitoring 2>/dev/null | python3 -c "import sys, json
-      try:
-        data = json.load(sys.stdin)
-        targets = data.get('data', {}).get('activeTargets', [])
-        print(f'Total active targets: {len(targets)}')
-        for t in targets:
-          job = t.get('labels', {}).get('job', '?')
-          health = t.get('health', '?')
-          url = t.get('scrapeUrl', '?')
-          print(f'  {health:5} | {job} | {url}')
-      except Exception as e:
-        print('Parse error:', e)
-        print(sys.stdin.read())" || true
+      kubectl logs curl-prom -n monitoring 2>/dev/null \
+        | grep -o '"job":"[^"]*"\|"health":"[^"]*"\|"scrapeUrl":"[^"]*"' \
+        | paste - - - \
+        || true
       kubectl delete pod curl-prom -n monitoring --ignore-not-found
  
 deploy-monitoring-dev:
