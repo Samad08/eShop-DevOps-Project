@@ -267,6 +267,33 @@ deploy-monitoring-dev:
     DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
     ENV_SUFFIX: dev
 
+
+diagnose-ingress:
+  stage: monitoring
+  image: dtzar/helm-kubectl:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      when: always
+  needs: [deploy-monitoring-dev]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-dev.yaml
+  script:
+    - echo "=== WORKING APP INGRESS (catalog) ==="
+    - kubectl get ingress eshop-catalog-api -n eshop-dev -o yaml
+
+    - echo "=== ALL INGRESSES ==="
+    - kubectl get ingress -A
+
+    - echo "=== TRAEFIK SERVICE ==="
+    - kubectl get svc -n kube-system | grep traefik
+
+    - echo "=== TRAEFIK ENTRYPOINTS ==="
+    - kubectl describe svc traefik -n kube-system
+
+    - echo "=== GRAFANA INGRESS CURRENT ==="
+    - kubectl get ingress monitoring-grafana -n monitoring -o yaml
+
+
 #deploy-monitoring-staging:
 #  <<: *monitoring-template
 #  rules:
