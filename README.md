@@ -1,6 +1,6 @@
 # eShopOnContainers DevOps Project
 
-**Group 6 — January 2026 Cohort**
+**JAN26-Group6**
 
 > A production-ready DevOps implementation of the eShopOnContainers microservices ecommerce platform, featuring full CI/CD automation, Kubernetes orchestration, infrastructure as code, monitoring, and security scanning.
 
@@ -64,30 +64,30 @@ This project wraps the application in a full DevOps lifecycle:
    ┌──────┴─────────────────────────────────────────┐
    │              eshop-dev namespace               │
    │                                                │
-   │  ┌─────────┐  ┌─────────┐  ┌──────────────┐  │
-   │  │Basket   │  │Catalog  │  │  Identity    │  │
-   │  │  API    │  │  API    │  │    API       │  │
-   │  └────┬────┘  └────┬────┘  └──────┬───────┘  │
-   │       │            │              │           │
-   │  ┌────┴────┐  ┌────┴────┐  ┌─────┴──────┐   │
-   │  │Ordering │  │Payment  │  │  Webhooks  │   │
-   │  │  API    │  │  API    │  │    API     │   │
-   │  └────┬────┘  └─────────┘  └────────────┘   │
-   │       │                                       │
-   │  ┌────┴──────────────────────────────────┐   │
-   │  │           RabbitMQ (Event Bus)        │   │
-   │  └───────────────────────────────────────┘   │
-   │                                               │
-   │  ┌────────────┐  ┌───────┐  ┌─────────────┐  │
-   │  │ SQL Server │  │ Redis │  │  MongoDB    │  │
-   │  └────────────┘  └───────┘  └─────────────┘  │
+   │  ┌─────────┐  ┌─────────┐  ┌──────────────┐    │
+   │  │Basket   │  │Catalog  │  │  Identity    │    │
+   │  │  API    │  │  API    │  │    API       │    │
+   │  └────┬────┘  └────┬────┘  └──────┬───────┘    │
+   │       │            │              │            │
+   │  ┌────┴────┐  ┌────┴────┐  ┌─────┴──────┐      │
+   │  │Ordering │  │Payment  │  │  Webhooks  │      │
+   │  │  API    │  │  API    │  │    API     │      │
+   │  └────┬────┘  └─────────┘  └────────────┘      │
+   │       │                                        │
+   │  ┌────┴──────────────────────────────────┐     │
+   │  │           RabbitMQ (Event Bus)        │     │
+   │  └───────────────────────────────────────┘     │
+   │                                                │
+   │  ┌────────────┐  ┌───────┐  ┌─────────────┐    │
+   │  │ SQL Server │  │ Redis │  │  MongoDB    │    │
+   │  └────────────┘  └───────┘  └─────────────┘    │
    └────────────────────────────────────────────────┘
 
    ┌─────────────────────────────────────┐
    │         monitoring namespace        │
-   │  ┌──────────────┐  ┌─────────────┐ │
-   │  │  Prometheus  │  │   Grafana   │ │
-   │  └──────────────┘  └─────────────┘ │
+   │  ┌──────────────┐  ┌─────────────┐  │
+   │  │  Prometheus  │  │   Grafana   │  │
+   │  └──────────────┘  └─────────────┘  │
    └─────────────────────────────────────┘
 
    ┌─────────────────────────────────────┐
@@ -99,6 +99,65 @@ This project wraps the application in a full DevOps lifecycle:
    └─────────────────────────────────────┘
 ```
 
+## CI/CD Pipeline
+
+The pipeline is defined in `.gitlab-ci.yml` and consists of 5 stages:
+
+### Stage 1: test
+
+Runs on every push. Executes unit tests and dependency scanning in parallel.
+
+```
+unit-tests        → dotnet test for EventBus, Basket, Catalog, Ordering
+dependency-scan   → Trivy filesystem scan for vulnerable packages
+```
+
+### Stage 2: build
+
+Runs only on `dev` branch when `src/` files change. Builds and pushes 14 Docker images in parallel using a matrix strategy.
+
+```
+build-and-push → docker build + push for all 14 services
+```
+
+Each image is tagged with:
+- `linux-latest` — always points to the most recent build
+- `linux-{commit-sha}` — immutable tag for traceability
+
+### Stage 3: deploy
+
+Deploys infrastructure services (SQL, Redis, RabbitMQ) then application services via Helm.
+
+```
+deploy-dev      → automatic on dev branch  → k3s-dev
+deploy-staging  → automatic on main branch → k3s-staging
+```
+
+### Stage 4: promote
+
+```
+deploy-prod → MANUAL APPROVAL → k3s-prod
+```
+
+### Stage 5: monitoring
+
+Deploys or upgrades the `kube-prometheus-stack` Helm chart and applies the `ServiceMonitor` for scraping app metrics.
+
+```
+deploy-monitoring-dev     → after deploy-dev
+deploy-monitoring-staging → after deploy-staging (commented out)
+deploy-monitoring-prod    → manual, after deploy-prod (commented out)
+```
+
+### Branching Strategy
+
+```
+main   → staging + prod (prod requires manual approval)
+dev    → dev environment (fully automatic)
+```
+
+Feature branches should be merged into `dev` for testing, then `dev` merged into `main` for staging/production promotion.
+
 ### CI/CD Pipeline Flow
 
 ```
@@ -106,32 +165,32 @@ This project wraps the application in a full DevOps lifecycle:
         │
         ▼
  ┌─────────────┐
- │  Stage 1   │  Unit Tests (dotnet test)
+ │  Stage 1    │  Unit Tests (dotnet test)
  │    test     │
  │  dep-scan   │  Trivy dependency scan
  └──────┬──────┘
         │
         ▼
  ┌─────────────┐
- │  Stage 2   │  Docker build + push to GitLab Registry
+ │  Stage 2    │  Docker build + push to GitLab Registry
  │    build    │  (14 service images)
  └──────┬──────┘
         │
         ▼
  ┌─────────────┐
- │  Stage 3   │  Helm deploy to k3s-dev (automatic)
+ │  Stage 3    │  Helm deploy to k3s-dev (automatic)
  │   deploy    │  Helm deploy to k3s-staging (on main branch)
  └──────┬──────┘
         │
         ▼
  ┌─────────────┐
- │  Stage 4   │  Deploy to k3s-prod (MANUAL APPROVAL)
+ │  Stage 4    │  Deploy to k3s-prod (MANUAL APPROVAL)
  │   promote   │
  └──────┬──────┘
         │
         ▼
  ┌─────────────┐
- │  Stage 5   │  Deploy Prometheus + Grafana
+ │  Stage 5    │  Deploy Prometheus + Grafana
  │ monitoring  │  Apply ServiceMonitor
  │             │  Restart app pods
  └─────────────┘
@@ -341,67 +400,6 @@ done
 ```
 
 The `0` means "previous revision". Use `helm history eshop-basket-api -n eshop-prod` to see all revisions.
-
----
-
-## CI/CD Pipeline
-
-The pipeline is defined in `.gitlab-ci.yml` and consists of 5 stages:
-
-### Stage 1: test
-
-Runs on every push. Executes unit tests and dependency scanning in parallel.
-
-```
-unit-tests        → dotnet test for EventBus, Basket, Catalog, Ordering
-dependency-scan   → Trivy filesystem scan for vulnerable packages
-```
-
-### Stage 2: build
-
-Runs only on `dev` branch when `src/` files change. Builds and pushes 14 Docker images in parallel using a matrix strategy.
-
-```
-build-and-push → docker build + push for all 14 services
-```
-
-Each image is tagged with:
-- `linux-latest` — always points to the most recent build
-- `linux-{commit-sha}` — immutable tag for traceability
-
-### Stage 3: deploy
-
-Deploys infrastructure services (SQL, Redis, RabbitMQ) then application services via Helm.
-
-```
-deploy-dev      → automatic on dev branch  → k3s-dev
-deploy-staging  → automatic on main branch → k3s-staging
-```
-
-### Stage 4: promote
-
-```
-deploy-prod → MANUAL APPROVAL → k3s-prod
-```
-
-### Stage 5: monitoring
-
-Deploys or upgrades the `kube-prometheus-stack` Helm chart and applies the `ServiceMonitor` for scraping app metrics.
-
-```
-deploy-monitoring-dev     → after deploy-dev
-deploy-monitoring-staging → after deploy-staging (commented out)
-deploy-monitoring-prod    → manual, after deploy-prod (commented out)
-```
-
-### Branching Strategy
-
-```
-main   → staging + prod (prod requires manual approval)
-dev    → dev environment (fully automatic)
-```
-
-Feature branches should be merged into `dev` for testing, then `dev` merged into `main` for staging/production promotion.
 
 ---
 
