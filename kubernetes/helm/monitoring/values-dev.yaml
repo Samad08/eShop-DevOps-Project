@@ -10,13 +10,15 @@ grafana:
 
 prometheus:
   prometheusSpec:
-    retention: 3d          # short retention, dev doesn't need history
+    scrapeInterval: 30s      # scrape every 60s instead of 15s (4x less work)
+    evaluationInterval: 30s
+    retention: 1d          # short retention, dev doesn't need history
     resources:
       requests:
         cpu: 100m
         memory: 256Mi
       limits:
-        cpu: 200m
+        cpu: 300m
         memory: 512Mi
     storageSpec:
       volumeClaimTemplate:
@@ -26,3 +28,13 @@ prometheus:
           resources:
             requests:
               storage: 2Gi   # small disk, it's just dev
+
+# Disable heavy components not needed for the course
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
