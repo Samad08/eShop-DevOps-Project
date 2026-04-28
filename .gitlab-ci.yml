@@ -38,9 +38,19 @@ dependency-scan:
         --exit-code 0 \
         --severity HIGH,CRITICAL \
         --format table
+
+    - echo "=== GENERATING JSON REPORT ==="
+    - |
+      trivy fs ./src \
+        --scanners vuln \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --format json \
+        --output trivy-dependency-report.json
+
   artifacts:
-    reports:
-      dependency_scanning: trivy-dependency-report.json
+    paths:
+      - trivy-dependency-report.json
     when: always
     expire_in: 1 week
   allow_failure: true
