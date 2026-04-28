@@ -43,13 +43,13 @@ This project wraps the application in a full DevOps lifecycle:
 
 ![Architecture Diagram](docs/architecture.svg)
 
-```
+---
 
 ## CI/CD Pipeline
 
 The pipeline is defined in `.gitlab-ci.yml` and consists of 5 stages:
 
-### Stage 1: test
+## Stage 1: test
 
 Runs on every push. Executes unit tests and dependency scanning in parallel.
 
