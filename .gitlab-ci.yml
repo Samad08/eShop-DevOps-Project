@@ -24,6 +24,25 @@ unit-tests:
     - dotnet test src/Services/Basket/Basket.UnitTests/Basket.UnitTests.csproj --no-restore --verbosity normal
     - dotnet test src/Services/Catalog/Catalog.UnitTests/Catalog.UnitTests.csproj --no-restore --verbosity normal
     - dotnet test src/Services/Ordering/Ordering.UnitTests/Ordering.UnitTests.csproj --no-restore --verbosity normal
+# dependency scanning with Trivy
+dependency-scan:
+  stage: test
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - echo "=== SCANNING NUGET DEPENDENCIES ==="
+    - trivy fs ./src \
+        --scanners vuln \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --format table
+  artifacts:
+    reports:
+      dependency_scanning: trivy-dependency-report.json
+    when: always
+    expire_in: 1 week
+  allow_failure: true
 
 # ──────────────────────────────────────────────
 # Stage 2: Build & Push to GitLab Registry
@@ -202,7 +221,7 @@ deploy-prod:
         --create-namespace \
         --values kubernetes/helm/monitoring/values.yaml \
         --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
-        --set grafana.adminPassword=admin123 \
+        --set grafana.adminPassword=$GRAFANA_PASSWORD \
         --wait --timeout 10m
  
     # Apply ServiceMonitor with correct app namespace injected
