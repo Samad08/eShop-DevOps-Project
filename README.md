@@ -97,6 +97,11 @@ This project wraps the application in a full DevOps lifecycle:
    │  │  (vm102-docker-runner)       │   │
    │  └──────────────────────────────┘   │
    └─────────────────────────────────────┘
+
+```
+### picture 
+![Architecture Diagram](docs/architecture.svg)
+
 ```
 
 ## CI/CD Pipeline
