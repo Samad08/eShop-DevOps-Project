@@ -41,7 +41,6 @@ This project wraps the application in a full DevOps lifecycle:
 
 ## Architecture Diagram
 
-```
 ![Architecture Diagram](docs/architecture.svg)
 
 ```
