@@ -2,11 +2,11 @@ grafana:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
       cpu: 200m
       memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 prometheus:
   prometheusSpec:
@@ -15,11 +15,11 @@ prometheus:
     retention: 1d          # short retention, dev doesn't need history
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 300m
+        cpu: 200m
         memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -27,7 +27,7 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 2Gi   # small disk, it's just dev
+              storage: 4Gi   # small disk, it's just dev
 
 # Disable heavy components not needed for the course
 kubeEtcd:
@@ -37,4 +37,6 @@ kubeControllerManager:
 kubeScheduler:
   enabled: false
 kubeProxy:
+  enabled: false
+alertmanager:
   enabled: false
