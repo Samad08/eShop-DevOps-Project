@@ -32,7 +32,8 @@ dependency-scan:
     entrypoint: [""]
   script:
     - echo "=== SCANNING NUGET DEPENDENCIES ==="
-    - trivy fs ./src \
+    - |
+      trivy fs ./src \
         --scanners vuln \
         --exit-code 0 \
         --severity HIGH,CRITICAL \
