@@ -41,5 +41,3 @@ kubeScheduler:
   enabled: false
 kubeProxy:
   enabled: false
-alertmanager:
-  enabled: false
