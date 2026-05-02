@@ -7,10 +7,15 @@ grafana:
     limits:
       cpu: 500m
       memory: 512Mi
+  ingress:
+    hosts:
+      - grafana.jan26-group6-eshoponcontainers.abrdns.com
 
 prometheus:
   prometheusSpec:
-    retention: 15d         # keep full history in prod
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    retention: 3d
     resources:
       requests:
         cpu: 300m
@@ -25,4 +30,4 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
+              storage: 6Gi

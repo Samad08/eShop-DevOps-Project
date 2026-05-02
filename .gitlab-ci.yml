@@ -51,6 +51,8 @@ dependency-scan:
   artifacts:
     paths:
       - trivy-dependency-report.json
+    reports:
+      dependency_scanning: trivy-dependency-report.json
     when: always
     expire_in: 1 week
   allow_failure: true
@@ -108,6 +110,39 @@ build-and-push:
         DOCKERFILE: src/Web/WebStatus/Dockerfile
       - IMAGE: webhooks.client
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
+
+image-scan:
+  stage: build
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - src/**/*
+  needs: [build-and-push]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | trivy registry login \
+        --username $CI_REGISTRY_USER \
+        --password-stdin $REGISTRY
+  script:
+    - echo "=== SCANNING DOCKER IMAGES ==="
+    - |
+      for image in basket.api catalog.api identity.api ordering.api payment.api webhooks.api; do
+        echo "--- Scanning $image ---"
+        trivy image \
+          --exit-code 0 \
+          --severity HIGH,CRITICAL \
+          --format table \
+          --timeout 5m \
+          $REGISTRY_IMAGE/$image:linux-latest || true
+      done
+  artifacts:
+    paths:
+      - trivy-image-report-*.json
+    when: always
+    expire_in: 1 week
+  allow_failure: true
 
 # ──────────────────────────────────────────────
 # Stage 3: Deploy

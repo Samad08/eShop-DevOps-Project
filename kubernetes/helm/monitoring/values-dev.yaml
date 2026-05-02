@@ -7,6 +7,9 @@ grafana:
     limits:
       cpu: 500m
       memory: 512Mi
+  ingress:
+    hosts:
+      - grafana.dev.jan26-group6-eshoponcontainers.abrdns.com
 
 prometheus:
   prometheusSpec:
