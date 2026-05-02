@@ -80,6 +80,7 @@ public class Startup
         ConfigureEventBus(app);
 
         app.UseRouting();
+        app.UsePrometheusMonitoring();
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapHealthChecks("/hc", new HealthCheckOptions()
@@ -91,6 +92,7 @@ public class Startup
             {
                 Predicate = r => r.Name.Contains("self")
             });
+            endpoints.MapPrometheusMonitoring();
         });
     }
 

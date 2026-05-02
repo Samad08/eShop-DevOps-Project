@@ -29,6 +29,7 @@ public class Startup
             .AddCustomAuthorization(Configuration)
             .AddCustomIntegrations(Configuration)
             .AddCustomConfiguration(Configuration)
+            .AddPrometheusMonitoring()
             .AddEventBus(Configuration);
         //configure autofac
 
@@ -63,6 +64,7 @@ public class Startup
             });
 
         app.UseRouting();
+        app.UsePrometheusMonitoring();
         app.UseCors("CorsPolicy");
         ConfigureAuth(app);
 
@@ -71,6 +73,7 @@ public class Startup
             endpoints.MapGrpcService<OrderingService>();
             endpoints.MapDefaultControllerRoute();
             endpoints.MapControllers();
+            endpoints.MapPrometheusMonitoring();
             endpoints.MapGet("/_proto/", async ctx =>
             {
                 ctx.Response.ContentType = "text/plain";

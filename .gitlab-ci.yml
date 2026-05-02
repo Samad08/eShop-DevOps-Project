@@ -3,6 +3,7 @@ stages:
   - build
   - deploy
   - promote
+  - monitoring
 
 variables:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -23,6 +24,38 @@ unit-tests:
     - dotnet test src/Services/Basket/Basket.UnitTests/Basket.UnitTests.csproj --no-restore --verbosity normal
     - dotnet test src/Services/Catalog/Catalog.UnitTests/Catalog.UnitTests.csproj --no-restore --verbosity normal
     - dotnet test src/Services/Ordering/Ordering.UnitTests/Ordering.UnitTests.csproj --no-restore --verbosity normal
+# dependency scanning with Trivy
+dependency-scan:
+  stage: test
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - echo "=== SCANNING NUGET DEPENDENCIES ==="
+    - |
+      trivy fs ./src \
+        --scanners vuln \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --format table
+
+    - echo "=== GENERATING JSON REPORT ==="
+    - |
+      trivy fs ./src \
+        --scanners vuln \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --format json \
+        --output trivy-dependency-report.json
+
+  artifacts:
+    paths:
+      - trivy-dependency-report.json
+    reports:
+      dependency_scanning: trivy-dependency-report.json
+    when: always
+    expire_in: 1 week
+  allow_failure: true
 
 # ──────────────────────────────────────────────
 # Stage 2: Build & Push to GitLab Registry
@@ -78,6 +111,39 @@ build-and-push:
       - IMAGE: webhooks.client
         DOCKERFILE: src/Web/WebhookClient/Dockerfile
 
+image-scan:
+  stage: build
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - src/**/*
+  needs: [build-and-push]
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | trivy registry login \
+        --username $CI_REGISTRY_USER \
+        --password-stdin $REGISTRY
+  script:
+    - echo "=== SCANNING DOCKER IMAGES ==="
+    - |
+      for image in basket.api catalog.api identity.api ordering.api payment.api webhooks.api; do
+        echo "--- Scanning $image ---"
+        trivy image \
+          --exit-code 0 \
+          --severity HIGH,CRITICAL \
+          --format table \
+          --timeout 5m \
+          $REGISTRY_IMAGE/$image:linux-latest || true
+      done
+  artifacts:
+    paths:
+      - trivy-image-report-*.json
+    when: always
+    expire_in: 1 week
+  allow_failure: true
+
 # ──────────────────────────────────────────────
 # Stage 3: Deploy
 # dev  → k3s-dev     (automatic)
@@ -112,15 +178,25 @@ build-and-push:
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set inf.tls.enabled=true \
           --set "ingress.hosts={$DNS}" \
-          --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
+          --set ingress.annotations."kubernetes\.io/ingress\.class"=traefik \
           --set image.tag=linux-latest \
           --set image.pullPolicy=Always \
           --set inf.registry.server=$REGISTRY_PROJECT \
           --set inf.registry.login=$DEPLOY_TOKEN_USER \
           --set inf.registry.pwd=$DEPLOY_TOKEN_PASSWORD \
           --set inf.registry.secretName=eshop-registry-secret \
+          --set service.labels.monitor=true \
           || true
       done
+
+    - |
+      for svc in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub ordering-backgroundtasks; do
+        echo "Labeling $svc..."
+        kubectl label svc $svc monitor=true \
+          --namespace $NAMESPACE \
+          --overwrite && echo "OK" || echo "FAILED"
+      done
+
     - |
       for gw in apigwms apigwws; do
         helm upgrade --install eshop-$gw $gw \
@@ -128,7 +204,8 @@ build-and-push:
           --values app.yaml --values inf.yaml \
           --set inf.k8s.dns=$DNS --set app.name=eshop \
           --set "ingress.hosts={$DNS}" \
-          --set ingress.annotations."kubernetes\\.io/ingress\\.class"=traefik \
+          --set ingress.annotations."kubernetes\.io/ingress\.class"=traefik \
+          --force-conflicts \
           || true
       done
 
@@ -173,3 +250,91 @@ deploy-prod:
     NAMESPACE: eshop-prod
     DNS: "jan26-group6-eshoponcontainers.abrdns.com"
 
+# ──────────────────────────────────────────────
+# Stage 5: Monitoring (deploy Prometheus + Grafana)
+# Runs after deploy on each branch, manual on prod
+# ──────────────────────────────────────────────
+.monitoring-template: &monitoring-template
+  stage: monitoring
+  image: dtzar/helm-kubectl:latest
+  script:
+    # Deploy Prometheus + Grafana via Helm
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+    - |
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        --namespace monitoring \
+        --create-namespace \
+        --values kubernetes/helm/monitoring/values.yaml \
+        --values kubernetes/helm/monitoring/values-$ENV_SUFFIX.yaml \
+        --set grafana.adminPassword=$GRAFANA_PASSWORD \
+        --wait --timeout 10m
+ 
+    # Apply ServiceMonitor with correct app namespace injected
+    - |
+      sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
+        kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
+   
+    # Check /metrics on basket service
+    - echo "=== BASKET /metrics ==="
+    - |
+      kubectl delete pod curl-test -n $NAMESPACE --ignore-not-found
+      kubectl run curl-test \
+        --image=curlimages/curl \
+        --restart=Never \
+        --namespace $NAMESPACE \
+        -- curl -s http://basket-api/metrics
+      sleep 15
+      kubectl logs curl-test -n $NAMESPACE 2>/dev/null | head -20 || true
+      kubectl delete pod curl-test -n $NAMESPACE --ignore-not-found
+ 
+    # Check Prometheus targets
+    - echo "=== PROMETHEUS TARGETS (up/down) ==="
+    - |
+      kubectl delete pod curl-prom -n monitoring --ignore-not-found
+      kubectl run curl-prom \
+        --image=curlimages/curl \
+        --restart=Never \
+        --namespace monitoring \
+        -- curl -s "http://monitoring-kube-prometheus-stack-prometheus:9090/api/v1/targets?state=active"
+      sleep 30
+      kubectl logs curl-prom -n monitoring 2>/dev/null \
+        | grep -o '"job":"[^"]*"\|"health":"[^"]*"\|"scrapeUrl":"[^"]*"' \
+        | paste - - - \
+        || true
+      kubectl delete pod curl-prom -n monitoring --ignore-not-found
+ 
+deploy-monitoring-dev:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"
+  needs: [deploy-dev]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-dev.yaml
+    NAMESPACE: eshop-dev
+    DNS: "dev.jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: dev
+
+
+deploy-monitoring-staging:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+  needs: [deploy-staging]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-staging.yaml
+    NAMESPACE: eshop-staging
+    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: staging
+
+deploy-monitoring-prod:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+      when: manual
+  needs: [deploy-prod]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-prod.yaml
+    NAMESPACE: eshop-prod
+    DNS: "jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: prod

@@ -1,0 +1,33 @@
+grafana:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  ingress:
+    hosts:
+      - grafana.jan26-group6-eshoponcontainers.abrdns.com
+
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    retention: 3d
+    resources:
+      requests:
+        cpu: 300m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 6Gi

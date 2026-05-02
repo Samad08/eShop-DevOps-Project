@@ -19,7 +19,8 @@ public class Startup
             .AddIntegrationServices(Configuration)
             .AddEventBus(Configuration)
             .AddSwagger(Configuration)
-            .AddCustomHealthCheck(Configuration);
+            .AddCustomHealthCheck(Configuration)
+            .AddPrometheusMonitoring();
 
         var container = new ContainerBuilder();
         container.Populate(services);
@@ -49,11 +50,13 @@ public class Startup
             });
 
         app.UseRouting();
+        app.UsePrometheusMonitoring();
         app.UseCors("CorsPolicy");
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapDefaultControllerRoute();
             endpoints.MapControllers();
+            endpoints.MapPrometheusMonitoring();
             endpoints.MapGet("/_proto/", async ctx =>
             {
                 ctx.Response.ContentType = "text/plain";

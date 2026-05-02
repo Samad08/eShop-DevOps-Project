@@ -1,0 +1,214 @@
+<svg width="680" viewBox="0 0 680 920" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>eShopOnContainers DevOps Architecture Diagram</title>
+<desc>Full architecture showing Proxmox VMs, Kubernetes clusters, microservices, CI/CD pipeline, monitoring stack, and nginx reverse proxy for Group 6 Jan 2026 cohort.</desc>
+
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #1a1a1a; }
+    .th  { font-size: 13px; font-weight: 600; }
+    .ts  { font-size: 11px; font-weight: 400; fill: #444; }
+
+    /* c-gray */
+    .c-gray rect, .c-gray circle { fill: #F1EFE8; stroke: #5F5E5A; }
+    .c-gray .th { fill: #2C2C2A; }
+    .c-gray .ts { fill: #5F5E5A; }
+
+    /* c-blue */
+    .c-blue rect { fill: #E6F1FB; stroke: #185FA5; }
+    .c-blue .th  { fill: #0C447C; }
+    .c-blue .ts  { fill: #185FA5; }
+
+    /* c-teal */
+    .c-teal rect { fill: #E1F5EE; stroke: #0F6E56; }
+    .c-teal .th  { fill: #085041; }
+    .c-teal .ts  { fill: #0F6E56; }
+
+    /* c-coral */
+    .c-coral rect { fill: #FAECE7; stroke: #993C1D; }
+    .c-coral .th  { fill: #712B13; }
+    .c-coral .ts  { fill: #993C1D; }
+
+    /* c-amber */
+    .c-amber rect { fill: #FAEEDA; stroke: #854F0B; }
+    .c-amber .th  { fill: #633806; }
+    .c-amber .ts  { fill: #854F0B; }
+
+    /* c-purple */
+    .c-purple rect { fill: #EEEDFE; stroke: #534AB7; }
+    .c-purple .th  { fill: #3C3489; }
+    .c-purple .ts  { fill: #534AB7; }
+
+    /* c-green */
+    .c-green rect { fill: #EAF3DE; stroke: #3B6D11; }
+    .c-green .th  { fill: #27500A; }
+    .c-green .ts  { fill: #3B6D11; }
+
+    .arr { fill: none; stroke: #888780; stroke-width: 1.2; marker-end: url(#arrow); }
+  </style>
+</defs>
+
+<!-- ── TITLE ── -->
+<text class="th" x="340" y="28" text-anchor="middle" dominant-baseline="central" style="font-size:15px">eShopOnContainers — DevOps architecture</text>
+<text class="ts" x="340" y="46" text-anchor="middle" dominant-baseline="central">Group 6 · January 2026 cohort</text>
+
+<!-- ══════════════════════════════
+     Internet + Nginx
+════════════════════════════════ -->
+<g class="c-gray">
+  <rect x="270" y="62" width="140" height="36" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="80" text-anchor="middle" dominant-baseline="central">Internet</text>
+</g>
+<line x1="340" y1="98" x2="340" y2="118" class="arr"/>
+
+<g class="c-teal">
+  <rect x="190" y="118" width="300" height="48" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="136" text-anchor="middle" dominant-baseline="central">Nginx reverse proxy</text>
+  <text class="ts" x="340" y="154" text-anchor="middle" dominant-baseline="central">SSL/TLS via Certbot · 62.210.88.216</text>
+</g>
+
+<line x1="260" y1="166" x2="120" y2="218" class="arr"/>
+<line x1="340" y1="166" x2="340" y2="218" class="arr"/>
+<line x1="420" y1="166" x2="560" y2="218" class="arr"/>
+
+<!-- ══════════════════════════════
+     3 k3s clusters
+════════════════════════════════ -->
+<g class="c-blue">
+  <rect x="40" y="218" width="160" height="48" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="236" text-anchor="middle" dominant-baseline="central">k3s-dev</text>
+  <text class="ts" x="120" y="254" text-anchor="middle" dominant-baseline="central">10.10.20.10</text>
+</g>
+<g class="c-amber">
+  <rect x="260" y="218" width="160" height="48" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="236" text-anchor="middle" dominant-baseline="central">k3s-staging</text>
+  <text class="ts" x="340" y="254" text-anchor="middle" dominant-baseline="central">10.10.30.10</text>
+</g>
+<g class="c-coral">
+  <rect x="480" y="218" width="160" height="48" rx="8" stroke-width="0.5"/>
+  <text class="th" x="560" y="236" text-anchor="middle" dominant-baseline="central">k3s-prod</text>
+  <text class="ts" x="560" y="254" text-anchor="middle" dominant-baseline="central">10.10.40.10</text>
+</g>
+
+<line x1="120" y1="266" x2="120" y2="296" class="arr"/>
+
+<!-- Traefik ingress -->
+<g class="c-blue">
+  <rect x="40" y="296" width="160" height="36" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="314" text-anchor="middle" dominant-baseline="central">Traefik ingress</text>
+</g>
+<line x1="120" y1="332" x2="120" y2="354" class="arr"/>
+
+<!-- eshop-dev namespace -->
+<rect x="32" y="354" width="296" height="300" rx="10" fill="none" stroke="#888780" stroke-dasharray="6 3" stroke-width="1"/>
+<text class="ts" x="48" y="372" dominant-baseline="central">namespace: eshop-dev</text>
+
+<!-- Microservices -->
+<g class="c-purple"><rect x="44" y="382" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="88" y="400" text-anchor="middle" dominant-baseline="central">Basket API</text></g>
+<g class="c-purple"><rect x="144" y="382" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="188" y="400" text-anchor="middle" dominant-baseline="central">Catalog API</text></g>
+<g class="c-purple"><rect x="244" y="382" width="76" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="282" y="400" text-anchor="middle" dominant-baseline="central">Identity</text></g>
+
+<g class="c-purple"><rect x="44" y="428" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="88" y="446" text-anchor="middle" dominant-baseline="central">Ordering</text></g>
+<g class="c-purple"><rect x="144" y="428" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="188" y="446" text-anchor="middle" dominant-baseline="central">Payment</text></g>
+<g class="c-purple"><rect x="244" y="428" width="76" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="282" y="446" text-anchor="middle" dominant-baseline="central">Webhooks</text></g>
+
+<g class="c-purple"><rect x="44" y="474" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="88" y="492" text-anchor="middle" dominant-baseline="central">WebMVC</text></g>
+<g class="c-purple"><rect x="144" y="474" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="188" y="492" text-anchor="middle" dominant-baseline="central">WebSPA</text></g>
+<g class="c-purple"><rect x="244" y="474" width="76" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="282" y="492" text-anchor="middle" dominant-baseline="central">WebStatus</text></g>
+
+<g class="c-gray"><rect x="44" y="520" width="80" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="84" y="538" text-anchor="middle" dominant-baseline="central">RabbitMQ</text></g>
+<g class="c-gray"><rect x="136" y="520" width="80" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="176" y="538" text-anchor="middle" dominant-baseline="central">SQL Server</text></g>
+<g class="c-gray"><rect x="228" y="520" width="88" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="272" y="538" text-anchor="middle" dominant-baseline="central">Redis</text></g>
+
+<!-- monitoring namespace -->
+<rect x="32" y="666" width="296" height="66" rx="10" fill="none" stroke="#888780" stroke-dasharray="6 3" stroke-width="1"/>
+<text class="ts" x="48" y="682" dominant-baseline="central">namespace: monitoring</text>
+<g class="c-teal"><rect x="44" y="692" width="108" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="98" y="708" text-anchor="middle" dominant-baseline="central">Prometheus</text></g>
+<g class="c-teal"><rect x="164" y="692" width="108" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="218" y="708" text-anchor="middle" dominant-baseline="central">Grafana</text></g>
+
+<!-- ══════════════════════════════
+     CI/CD Pipeline (right side)
+════════════════════════════════ -->
+<g class="c-coral">
+  <rect x="370" y="296" width="270" height="48" rx="8" stroke-width="0.5"/>
+  <text class="th" x="505" y="314" text-anchor="middle" dominant-baseline="central">GitLab CE</text>
+  <text class="ts" x="505" y="332" text-anchor="middle" dominant-baseline="central">10.10.10.10 · Container Registry</text>
+</g>
+<line x1="505" y1="344" x2="505" y2="375" class="arr"/>
+<text class="ts" x="505" y="373" text-anchor="middle" dominant-baseline="central">CI/CD pipeline (.gitlab-ci.yml)</text>
+
+<g class="c-green"><rect x="370" y="382" width="270" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="505" y="398" text-anchor="middle" dominant-baseline="central">Stage 1 — test</text>
+  <text class="ts" x="505" y="414" text-anchor="middle" dominant-baseline="central">unit tests · Trivy dependency scan</text></g>
+<line x1="505" y1="426" x2="505" y2="440" class="arr"/>
+
+<g class="c-green"><rect x="370" y="440" width="270" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="505" y="456" text-anchor="middle" dominant-baseline="central">Stage 2 — build</text>
+  <text class="ts" x="505" y="472" text-anchor="middle" dominant-baseline="central">docker build · push 14 images</text></g>
+<line x1="505" y1="484" x2="505" y2="498" class="arr"/>
+
+<g class="c-green"><rect x="370" y="498" width="270" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="505" y="514" text-anchor="middle" dominant-baseline="central">Stage 3 — deploy</text>
+  <text class="ts" x="505" y="530" text-anchor="middle" dominant-baseline="central">Helm → dev (auto) · staging (auto)</text></g>
+<line x1="505" y1="542" x2="505" y2="556" class="arr"/>
+
+<g class="c-amber"><rect x="370" y="556" width="270" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="505" y="572" text-anchor="middle" dominant-baseline="central">Stage 4 — promote</text>
+  <text class="ts" x="505" y="588" text-anchor="middle" dominant-baseline="central">Helm → prod (manual approval)</text></g>
+<line x1="505" y1="600" x2="505" y2="614" class="arr"/>
+
+<g class="c-teal"><rect x="370" y="614" width="270" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="505" y="630" text-anchor="middle" dominant-baseline="central">Stage 5 — monitoring</text>
+  <text class="ts" x="505" y="646" text-anchor="middle" dominant-baseline="central">kube-prometheus-stack · ServiceMonitor</text></g>
+
+<!-- Pipeline → k3s-dev arrow -->
+<path d="M370 518 L330 518" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+
+<!-- ══════════════════════════════
+     Terraform / Proxmox footer
+════════════════════════════════ -->
+<rect x="32" y="756" width="616" height="80" rx="10" fill="none" stroke="#888780" stroke-dasharray="6 3" stroke-width="1"/>
+<text class="ts" x="48" y="772" dominant-baseline="central">Proxmox VE — Infrastructure as Code (Terraform)</text>
+
+<g class="c-gray"><rect x="44" y="782" width="96" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="92" y="798" text-anchor="middle" dominant-baseline="central">GitLab CE</text></g>
+<g class="c-gray"><rect x="152" y="782" width="96" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="200" y="798" text-anchor="middle" dominant-baseline="central">GL Runner</text></g>
+<g class="c-blue"><rect x="260" y="782" width="96" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="308" y="798" text-anchor="middle" dominant-baseline="central">k3s-dev</text></g>
+<g class="c-amber"><rect x="368" y="782" width="96" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="416" y="798" text-anchor="middle" dominant-baseline="central">k3s-staging</text></g>
+<g class="c-coral"><rect x="476" y="782" width="96" height="32" rx="6" stroke-width="0.5"/>
+  <text class="th" x="524" y="798" text-anchor="middle" dominant-baseline="central">k3s-prod</text></g>
+
+<!-- ══════════════════════════════
+     Legend
+════════════════════════════════ -->
+<g class="c-purple"><rect x="44" y="856" width="14" height="14" rx="3" stroke-width="0.5"/></g>
+<text class="ts" x="64" y="863" dominant-baseline="central">Microservices</text>
+<g class="c-teal"><rect x="160" y="856" width="14" height="14" rx="3" stroke-width="0.5"/></g>
+<text class="ts" x="180" y="863" dominant-baseline="central">Monitoring</text>
+<g class="c-green"><rect x="266" y="856" width="14" height="14" rx="3" stroke-width="0.5"/></g>
+<text class="ts" x="286" y="863" dominant-baseline="central">CI/CD stages</text>
+<g class="c-amber"><rect x="372" y="856" width="14" height="14" rx="3" stroke-width="0.5"/></g>
+<text class="ts" x="392" y="863" dominant-baseline="central">Manual approval</text>
+<g class="c-gray"><rect x="494" y="856" width="14" height="14" rx="3" stroke-width="0.5"/></g>
+<text class="ts" x="514" y="863" dominant-baseline="central">Infrastructure</text>
+
+</svg>
