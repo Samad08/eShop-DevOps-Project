@@ -316,25 +316,25 @@ deploy-monitoring-dev:
     ENV_SUFFIX: dev
 
 
-#deploy-monitoring-staging:
-#  <<: *monitoring-template
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-#  needs: [deploy-staging]
-#  variables:
-#    KUBECONFIG: /root/.kube/k3s-staging.yaml
-#    NAMESPACE: eshop-staging
-#    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
-#    ENV_SUFFIX: staging
-#
-#deploy-monitoring-prod:
-#  <<: *monitoring-template
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-#      when: manual
-#  needs: [deploy-prod]
-#  variables:
-#    KUBECONFIG: /root/.kube/k3s-prod.yaml
-#    NAMESPACE: eshop-prod
-#    DNS: "jan26-group6-eshoponcontainers.abrdns.com"
-#    ENV_SUFFIX: prod
+deploy-monitoring-staging:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+  needs: [deploy-staging]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-staging.yaml
+    NAMESPACE: eshop-staging
+    DNS: "staging.jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: staging
+
+deploy-monitoring-prod:
+  <<: *monitoring-template
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+      when: manual
+  needs: [deploy-prod]
+  variables:
+    KUBECONFIG: /root/.kube/k3s-prod.yaml
+    NAMESPACE: eshop-prod
+    DNS: "jan26-group6-eshoponcontainers.abrdns.com"
+    ENV_SUFFIX: prod
