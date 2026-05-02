@@ -2,6 +2,7 @@ namespace Microsoft.AspNetCore.Hosting
 {
     public static class IWebHostExtensions
     {
+        /*
         public static bool IsInKubernetes(this IWebHost webHost)
         {
             var cfg = webHost.Services.GetService<IConfiguration>();
@@ -58,6 +59,7 @@ namespace Microsoft.AspNetCore.Hosting
 
         return webHost;
         }
+        */
 
         private static void InvokeSeeder<TContext>(Action<TContext, IServiceProvider> seeder, TContext context, IServiceProvider services)
             where TContext : DbContext

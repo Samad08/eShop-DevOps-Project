@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: eshop-services
+  namespace: monitoring          # must match where Prometheus is installed
+  labels:
+    release: monitoring          # must match the Helm release name
+spec:
+  namespaceSelector:
+    matchNames:
+      - eshop-dev            # change per environment
+  selector:
+    matchLabels:
+      monitor: "true"            # your services need this label (see below)
+  endpoints:
+    - port: http
+      targetPort: 80
+      path: /metrics
+      interval: 15s
+      scheme: http

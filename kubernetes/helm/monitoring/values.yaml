@@ -1,0 +1,158 @@
+# kube-prometheus-stack values
+# Install: helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#          -n monitoring --create-namespace -f values.yaml
+
+grafana:
+  enabled: true
+  adminPassword: "passsword"   # override via CI/CD secret
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: traefik
+    #hosts:
+    #  - grafana.dev.jan26-group6-eshoponcontainers.abrdns.com (now defined in each env)
+    path: /
+    pathType: Prefix
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      dotnet-overview:
+        gnetId: 10427         # ASP.NET Core dashboard from grafana.com
+        revision: 1
+        datasource: Prometheus
+
+prometheus:
+  prometheusSpec:
+    # Watch ALL namespaces for ServiceMonitors (so your app namespace is included)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path    # k3s default StorageClass
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+    receivers:
+      - name: 'webhook'
+        webhook_configs:
+          - url: 'https://webhook.site/d22c54c7-5f31-46e7-b6f7-097ed0eca2b7'
+            send_resolved: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+# Prometheus alert rules for eShop services
+additionalPrometheusRulesMap:
+  eshop-alerts:
+    groups:
+      - name: eshop.pods
+        rules:
+          - alert: PodDown
+            expr: kube_pod_container_status_running{namespace="eshop-*"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.pod }} is down"
+              description: "Container {{ $labels.container }} in pod {{ $labels.pod }} has been down for more than 1 minute."
+
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total{namespace="eshop-*"}[10m]) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.pod }} is crash looping"
+              description: "Pod {{ $labels.pod }} has restarted more than once in the last 10 minutes."
+
+      - name: eshop.http
+        rules:
+          - alert: HighErrorRate
+            expr: |
+              rate(http_requests_received_total{code=~"5..",namespace="eshop-*"}[5m]) /
+              rate(http_requests_received_total{namespace="eshop-*"}[5m]) > 0.05
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate on {{ $labels.service }}"
+              description: "More than 5% of requests are returning 5xx errors on {{ $labels.service }}."
+
+          - alert: HighResponseTime
+            expr: |
+              histogram_quantile(0.99,
+                rate(http_request_duration_seconds_bucket{namespace="eshop-*"}[5m])
+              ) > 1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High response time on {{ $labels.service }}"
+              description: "99th percentile response time is above 1 second on {{ $labels.service }}."
+
+          - alert: ServiceDown
+            expr: up{job=~"eshop-*/.*"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service {{ $labels.job }} is down"
+              description: "Prometheus cannot scrape {{ $labels.job }} — the /metrics endpoint is unreachable."
+
+      - name: eshop.resources
+        rules:
+          - alert: HighMemoryUsage
+            expr: |
+              container_memory_working_set_bytes{namespace="eshop-*"}
+              / container_spec_memory_limit_bytes{namespace="eshop-*"} > 0.80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage in {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} is using more than 80% of its memory limit."
+
+          - alert: HighCPUUsage
+            expr: |
+              rate(container_cpu_usage_seconds_total{namespace="eshop-*"}[5m])
+              / container_spec_cpu_quota{namespace="eshop-*"} * 100000 > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage in {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} is using more than 80% of its CPU limit."
