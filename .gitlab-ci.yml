@@ -274,7 +274,21 @@ deploy-prod:
     - |
       sed "s/NAMESPACE_PLACEHOLDER/$NAMESPACE/g" \
         kubernetes/helm/monitoring/servicemonitor.yaml | kubectl apply -f -
-   
+    
+    - echo "=== RESTARTING APP PODS TO PICK UP NEW IMAGE ==="
+    - |
+      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub ordering-backgroundtasks; do
+        echo "Restarting eshop-$deploy..."
+        kubectl rollout restart deployment/eshop-$deploy \
+          --namespace $NAMESPACE && echo "OK" || echo "SKIPPED"
+      done
+    - echo "Waiting for rollouts to complete..."
+    - |
+      for deploy in basket-api catalog-api identity-api ordering-api payment-api webhooks-api mobileshoppingagg webshoppingagg ordering-signalrhub; do
+        kubectl rollout status deployment/eshop-$deploy \
+          --namespace $NAMESPACE --timeout=3m || true
+      done
+
     # Check /metrics on basket service
     - echo "=== BASKET /metrics ==="
     - |
