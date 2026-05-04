@@ -8,7 +8,11 @@ metadata:
 spec:
   namespaceSelector:
     matchNames:
+<<<<<<< HEAD
       - NAMESPACE_PLACEHOLDER
+=======
+      - eshop-dev            # change per environment
+>>>>>>> origin/main
   selector:
     matchLabels:
       monitor: "true"            # your services need this label (see below)

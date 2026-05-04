@@ -40,4 +40,9 @@ kubeControllerManager:
 kubeScheduler:
   enabled: false
 kubeProxy:
+<<<<<<< HEAD
+=======
+  enabled: false
+alertmanager:
+>>>>>>> origin/main
   enabled: false
