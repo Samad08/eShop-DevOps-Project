@@ -82,7 +82,7 @@ additionalPrometheusRulesMap:
       - name: eshop.pods
         rules:
           - alert: PodDown
-            expr: kube_pod_container_status_running{namespace="eshop-*"} == 0
+            expr: kube_pod_container_status_running{namespace=~"eshop-*"} == 0
             for: 1m
             labels:
               severity: critical
@@ -91,7 +91,7 @@ additionalPrometheusRulesMap:
               description: "Container {{ $labels.container }} in pod {{ $labels.pod }} has been down for more than 1 minute."
 
           - alert: PodCrashLooping
-            expr: rate(kube_pod_container_status_restarts_total{namespace="eshop-*"}[10m]) > 0.1
+            expr: rate(kube_pod_container_status_restarts_total{namespace=~"eshop-*"}[10m]) > 0.1
             for: 5m
             labels:
               severity: warning
@@ -103,8 +103,8 @@ additionalPrometheusRulesMap:
         rules:
           - alert: HighErrorRate
             expr: |
-              rate(http_requests_received_total{code=~"5..",namespace="eshop-*"}[5m]) /
-              rate(http_requests_received_total{namespace="eshop-*"}[5m]) > 0.05
+              rate(http_requests_received_total{code=~"5..",namespace=~"eshop-*"}[5m]) /
+              rate(http_requests_received_total{namespace=~"eshop-*"}[5m]) > 0.05
             for: 2m
             labels:
               severity: warning
@@ -115,7 +115,7 @@ additionalPrometheusRulesMap:
           - alert: HighResponseTime
             expr: |
               histogram_quantile(0.99,
-                rate(http_request_duration_seconds_bucket{namespace="eshop-*"}[5m])
+                rate(http_request_duration_seconds_bucket{namespace=~"eshop-*"}[5m])
               ) > 1
             for: 2m
             labels:
@@ -137,8 +137,8 @@ additionalPrometheusRulesMap:
         rules:
           - alert: HighMemoryUsage
             expr: |
-              container_memory_working_set_bytes{namespace="eshop-*"}
-              / container_spec_memory_limit_bytes{namespace="eshop-*"} > 0.80
+              container_memory_working_set_bytes{namespace=~"eshop-*"}
+              / container_spec_memory_limit_bytes{namespace=~"eshop-*"} > 0.80
             for: 5m
             labels:
               severity: warning
@@ -148,8 +148,8 @@ additionalPrometheusRulesMap:
 
           - alert: HighCPUUsage
             expr: |
-              rate(container_cpu_usage_seconds_total{namespace="eshop-*"}[5m])
-              / container_spec_cpu_quota{namespace="eshop-*"} * 100000 > 80
+              rate(container_cpu_usage_seconds_total{namespace=~"eshop-*"}[5m])
+              / container_spec_cpu_quota{namespace=~"eshop-*"} * 100000 > 80
             for: 5m
             labels:
               severity: warning
