@@ -32,7 +32,7 @@ prometheus:
             requests:
               storage: 4Gi   # small disk, it's just dev
 
-# Disable heavy components not needed for the course
+# Disable heavy components not needed
 kubeEtcd:
   enabled: false
 kubeControllerManager:
@@ -40,6 +40,4 @@ kubeControllerManager:
 kubeScheduler:
   enabled: false
 kubeProxy:
-  enabled: false
-alertmanager:
   enabled: false

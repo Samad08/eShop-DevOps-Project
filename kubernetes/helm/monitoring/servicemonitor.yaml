@@ -8,10 +8,10 @@ metadata:
 spec:
   namespaceSelector:
     matchNames:
-      - eshop-dev            # change per environment
+      - NAMESPACE_PLACEHOLDER
   selector:
     matchLabels:
-      monitor: "true"            # your services need this label (see below)
+      monitor: "true"            
   endpoints:
     - port: http
       targetPort: 80
