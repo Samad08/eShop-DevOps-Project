@@ -3,7 +3,9 @@
 **JAN26-Group6**
 
 > A production-ready DevOps implementation of the eShopOnContainers microservices ecommerce platform, featuring full CI/CD automation, Kubernetes orchestration, infrastructure as code, monitoring, and security scanning.
-
+> **Note:** This project was developed as a group project during the Liora DevOps Bootcamp 
+> The CI/CD pipeline runs on a private GitLab CE instance. 
+> This repository is a mirror for portfolio purposes.
 ---
 
 ## Table of Contents
